@@ -1,0 +1,6 @@
+cd ~/Desktop/CLAUDE\ CLODE/APP\ PRICING
+git init
+git add index.html
+git commit -m "Equisafe pricing calculator"
+git remote add origin https://github.com/TON-USERNAME/NOM-DU-REPO.git
+git push -u origin main
