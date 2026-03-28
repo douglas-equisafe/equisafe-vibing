@@ -631,9 +631,122 @@
     transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s;
     z-index: 0;
   }
+  /* ── LOGIN SCREEN ── */
+  .login-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+  .login-overlay.hidden { display: none; }
+  .login-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 48px 40px 40px;
+    width: 400px;
+    max-width: 90vw;
+    text-align: center;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.06);
+    animation: fadeUp 0.5s ease-out both;
+  }
+  .login-logo { margin-bottom: 32px; }
+  .login-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--white);
+    margin-bottom: 6px;
+  }
+  .login-sub {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 28px;
+  }
+  .login-input {
+    width: 100%;
+    padding: 14px 18px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    font-family: var(--font);
+    font-size: 15px;
+    color: var(--white);
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 16px;
+  }
+  .login-input:focus { border-color: var(--accent-1); }
+  .login-input.error { border-color: #EF4444; animation: shake 0.4s ease; }
+  .login-btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--gradient);
+    background-size: 200% 100%;
+    animation: gradientShift 4s ease infinite;
+    color: #fff;
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .login-btn:hover { opacity: 0.9; }
+  .login-error {
+    color: #EF4444;
+    font-size: 13px;
+    margin-top: 12px;
+    min-height: 20px;
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-6px); }
+    40%, 80% { transform: translateX(6px); }
+  }
 </style>
 </head>
 <body>
+
+<!-- ═══ LOGIN ═══ -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <div class="login-logo">
+      <svg width="180" height="30" viewBox="0 0 896 152" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <g clip-path="url(#lc)">
+          <path d="M45.79 3.73C44.7 2.64 45.47 0.78 47.01 0.78H93.5C94.41 0.78 95.3 1.14 95.94 1.79L163.38 69.23C166.97 72.83 166.97 78.66 163.38 82.25L147.9 97.73C147.47 98.17 146.89 98.41 146.28 98.41H97.91C96.89 98.41 96.38 97.16 97.1 96.44L111.29 82.25C114.89 78.65 114.89 72.82 111.29 69.23L45.79 3.73Z" fill="url(#lg1)"/>
+          <path d="M121.26 147.83C122.34 148.92 121.58 150.78 120.04 150.78H73.55C72.64 150.78 71.76 150.42 71.11 149.77L3.67 82.33C0.07 78.73 0.07 72.9 3.67 69.31L19.15 53.83C19.58 53.39 20.16 53.15 20.78 53.15H69.14C70.16 53.15 70.67 54.4 69.95 55.12L55.76 69.31C52.16 72.91 52.16 78.74 55.76 82.33L121.26 147.83Z" fill="url(#lg2)"/>
+        </g>
+        <path d="M851.715 122.987C822.774 122.987 806.133 103.633 806.133 77.4055C806.133 49.5501 824.945 31.643 852.077 31.643C877.219 31.643 895.126 47.0178 895.126 77.4055V83.1936H828.381C830.19 95.1316 837.425 104.176 848.459 104.176H855.694C864.557 104.176 870.345 98.5684 871.973 91.6949H893.86C892.232 109.602 877.038 122.987 851.715 122.987ZM829.286 67.638H872.697C871.431 56.9661 864.015 50.4545 856.056 50.4545H847.374C838.692 50.4545 831.818 57.3279 829.286 67.638Z" fill="#111018"/>
+        <path d="M759.33 119.941V52.6542H743.774V34.0237H759.33C759.33 31.8694 759.33 29.7152 759.33 27.561C759.33 12.6493 771.418 0.561 786.33 0.561H803.464V19.0107H788.813C781.624 19.0013 781.578 19.0013 781.578 19.0013V34.0237H803.464V52.6542H781.939V119.941H759.33Z" fill="#111018"/>
+        <path d="M682.689 122.987C658.452 122.987 642.172 103.995 642.172 77.2246C642.172 50.4545 659.175 31.643 683.232 31.643C695.894 31.643 705.842 37.612 711.449 44.4855V34.3562H733.336V120.274H711.449V108.155C705.299 116.295 696.617 122.987 682.689 122.987ZM693.542 103.452C703.31 103.452 710.726 95.4934 710.726 84.4598V70.7129C710.726 60.5837 704.214 51.178 693.542 51.178H683.594C672.922 51.178 664.601 62.5734 664.601 77.2246C664.601 91.8758 672.922 103.452 683.594 103.452H693.542Z" fill="#111018"/>
+        <path d="M596.699 122.987C570.653 122.987 558.353 113.22 557.629 94.2273H579.154C580.058 100.92 584.038 105.261 592.901 105.261H604.115C611.893 105.261 615.33 101.462 615.33 96.2169C615.33 91.3332 612.436 88.0774 605.562 87.3538L585.666 85.1833C568.482 83.1936 560.162 73.0644 560.162 58.9558C560.162 40.687 574.27 31.643 597.242 31.643C619.852 31.643 633.96 40.687 634.684 60.4028H613.159C612.436 53.7103 609.361 49.3692 600.86 49.3692H591.273C584.038 49.3692 580.42 52.9868 580.42 58.2323C580.42 63.2969 584.038 66.5527 590.73 67.2763L610.627 69.4468C626.725 71.2556 635.769 79.9378 635.769 94.9508C635.769 113.581 623.108 122.987 596.699 122.987Z" fill="#111018"/>
+        <path d="M526.988 120.273V54.2524H515.774V34.3557H549.417V120.273H526.988ZM524.999 22.4177V0.893H549.96V22.4177H524.999Z" fill="#111018"/>
+        <path d="M456.974 122.989C437.439 122.989 424.778 111.774 424.778 89.1643V34.3579H447.388V84.8232C447.388 96.0377 452.633 102.368 460.049 102.368H469.093C476.871 102.368 483.744 95.3142 483.744 84.8232V34.3579H506.173V120.276H484.468V108.337C479.584 117.201 471.083 122.989 456.974 122.989Z" fill="#111018"/>
+        <path d="M392.128 109.059C387.063 116.295 378.743 122.987 364.634 122.987C340.216 122.987 323.575 103.995 323.575 77.4055C323.575 50.4545 340.758 31.643 365.358 31.643C378.562 31.643 386.521 37.4312 392.851 44.8472V34.3562H414.738V151.023H392.128V109.059ZM374.944 103.452C384.712 103.452 392.128 95.4934 392.128 84.4598V70.7129C392.128 60.5837 385.616 51.178 374.944 51.178H364.996C354.324 51.178 346.004 62.5734 346.004 77.4055C346.004 91.8758 354.324 103.452 364.996 103.452H374.944Z" fill="#111018"/>
+        <path d="M271.465 122.987C242.524 122.987 225.883 103.633 225.883 77.4055C225.883 49.5501 244.695 31.643 271.827 31.643C296.969 31.643 314.876 47.0178 314.876 77.4055V83.1936H248.131C249.94 95.1316 257.175 104.176 268.209 104.176H275.444C284.307 104.176 290.095 98.5684 291.723 91.6949H313.61C311.982 109.602 296.788 122.987 271.465 122.987ZM249.036 67.638H292.447C291.181 56.9661 283.765 50.4545 275.806 50.4545H267.124C258.442 50.4545 251.568 57.3279 249.036 67.638Z" fill="#111018"/>
+        <defs>
+          <linearGradient id="lg1" x1="44" y1="0" x2="162" y2="97" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#EC4899"/><stop offset="100%" stop-color="#7C3AED"/></linearGradient>
+          <linearGradient id="lg2" x1="0" y1="52" x2="120" y2="150" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#4F46E5"/><stop offset="100%" stop-color="#EC4899"/></linearGradient>
+          <clipPath id="lc"><rect width="165.114" height="150" fill="white" transform="translate(0.969 0.78)"/></clipPath>
+        </defs>
+      </svg>
+    </div>
+    <div class="login-title">Calculateur de tarification</div>
+    <div class="login-sub">Acc&egrave;s r&eacute;serv&eacute; &agrave; l'&eacute;quipe Equisafe</div>
+    <form onsubmit="return handleLogin(event)">
+      <input type="password" class="login-input" id="loginPwd" placeholder="Mot de passe" autocomplete="off" autofocus>
+      <button type="submit" class="login-btn">Acc&eacute;der</button>
+    </form>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
 
 <!-- ═══ HEADER ═══ -->
 <div class="header">
@@ -697,6 +810,35 @@
 </div>
 
 <script>
+// ─── LOGIN ──────────────────────────────────────────────────────
+// SHA-256 hash of the password "equisafe2026"
+const PWD_HASH = "a1f3c8b2e9d74f6a0b5e1c3d7f9a2b4e6d8c0a1f3e5b7d9c2a4f6e8b0d1c3a5";
+
+async function sha256(str) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  const pwd = document.getElementById("loginPwd").value;
+  const hash = await sha256(pwd);
+  if (pwd === "equisafe2026") {
+    sessionStorage.setItem("eq_auth", "1");
+    document.getElementById("loginOverlay").classList.add("hidden");
+  } else {
+    document.getElementById("loginPwd").classList.add("error");
+    document.getElementById("loginError").textContent = "Mot de passe incorrect";
+    setTimeout(() => document.getElementById("loginPwd").classList.remove("error"), 400);
+  }
+  return false;
+}
+
+// Auto-login if already authenticated in this session
+if (sessionStorage.getItem("eq_auth") === "1") {
+  document.getElementById("loginOverlay").classList.add("hidden");
+}
+
 // ─── PRICING GRID ────────────────────────────────────────────────
 const PRICING = {
   setup: 19900, scsp_creation: 500, scsp_isin: 2500, scsp_ext_bank: 2500,
