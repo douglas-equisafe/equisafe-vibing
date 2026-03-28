@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Equisafe — Custom Pricing Calculator</title>
+<style>
+  @font-face { font-family: 'F37Lineca'; src: url('fonts/F37Lineca-Light.ttf') format('truetype'); font-weight: 300; font-style: normal; }
+  @font-face { font-family: 'F37Lineca'; src: url('fonts/F37Lineca-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+  @font-face { font-family: 'F37Lineca'; src: url('fonts/F37Lineca-Medium.ttf') format('truetype'); font-weight: 500; font-style: normal; }
+  @font-face { font-family: 'F37Lineca'; src: url('fonts/F37Lineca-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; }
+  @font-face { font-family: 'F37Lineca'; src: url('fonts/F37Lineca-Book.ttf') format('truetype'); font-weight: 450; font-style: normal; }
+
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #F6F5F8;
+    --bg-card: #FFFFFF;
+    --bg-elevated: #FAFAFE;
+    --bg-input: #F0EEF5;
+    --accent-1: #7C3AED;
+    --accent-2: #4F46E5;
+    --accent-3: #EC4899;
+    --accent-4: #F97316;
+    --accent-5: #6D5BD0;
+    --emerald: #059669;
+    --emerald-glow: rgba(5, 150, 105, 0.1);
+    --white: #111018;
+    --text: #4A4458;
+    --text-dim: #9490A3;
+    --border: #E4E1EC;
+    --border-hover: #C9C5D6;
+    --gradient: linear-gradient(135deg, #7C3AED, #4F46E5, #EC4899, #F97316);
+    --gradient-subtle: linear-gradient(135deg, rgba(124,58,237,0.08), rgba(79,70,229,0.05), rgba(236,72,153,0.06));
+    --font: 'F37Lineca', -apple-system, BlinkMacSystemFont, sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    min-height: 100vh;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* ── SUBTLE NOISE ── */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.018;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+    background-size: 256px;
+  }
+
+  /* ── AMBIENT GLOW ── */
+  body::after {
+    content: "";
+    position: fixed;
+    top: -30%;
+    right: -10%;
+    width: 700px;
+    height: 700px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(124,58,237,0.04) 0%, rgba(236,72,153,0.02) 40%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body > * { position: relative; z-index: 1; }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+  @keyframes borderGlow {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.8; }
+  }
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--bg);
+    padding: 20px 40px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .header::after {
+    content: "";
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--gradient);
+    opacity: 0.3;
+  }
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .header-right {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--text-dim);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  /* ── LAYOUT ── */
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 36px 40px;
+  }
+  .layout {
+    display: flex;
+    gap: 36px;
+    align-items: flex-start;
+  }
+  .form-col {
+    width: 58%;
+    animation: fadeUp 0.5s ease-out both;
+  }
+  .result-col {
+    width: 42%;
+    position: sticky;
+    top: 24px;
+    animation: fadeUp 0.5s ease-out 0.1s both;
+  }
+
+  /* ── SECTION ── */
+  .section {
+    margin-bottom: 10px;
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    transition: border-color 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .section:hover { border-color: var(--border-hover); }
+  .section-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    transition: background 0.2s;
+    color: var(--white);
+  }
+  .section-btn:hover { background: rgba(124,58,237,0.04); }
+  .section-btn .icon {
+    font-size: 16px;
+    color: var(--text-dim);
+    font-weight: 300;
+    transition: transform 0.3s;
+  }
+  .section-body {
+    padding: 4px 20px 20px;
+    border-top: 1px solid var(--border);
+  }
+  .section-body.hidden { display: none; }
+
+  /* ── TOGGLE ── */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+  }
+  .toggle-label {
+    font-size: 14px;
+    font-weight: 450;
+    color: var(--white);
+  }
+  .toggle-sub {
+    font-size: 11px;
+    color: var(--text-dim);
+    display: block;
+    margin-top: 2px;
+    letter-spacing: 0.2px;
+  }
+  .toggle-track {
+    position: relative;
+    width: 48px;
+    height: 26px;
+    border-radius: 13px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+  }
+  .toggle-track.on {
+    background: linear-gradient(135deg, var(--accent-1), var(--accent-3));
+    border-color: transparent;
+    box-shadow: 0 2px 12px rgba(124,58,237,0.2), 0 0 6px rgba(236,72,153,0.1);
+  }
+  .toggle-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: #FFFFFF;
+    border-radius: 50%;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .toggle-track.on .toggle-thumb { transform: translateX(22px); }
+
+  /* ── OFFER BUTTON ── */
+  .offer-btn {
+    font-size: 10px;
+    padding: 2px 10px;
+    border-radius: 20px;
+    border: 1.5px solid var(--emerald);
+    background: transparent;
+    color: var(--emerald);
+    cursor: pointer;
+    font-family: var(--font);
+    font-weight: 500;
+    transition: all 0.25s ease;
+    white-space: nowrap;
+    line-height: 1.4;
+  }
+  .offer-btn:hover {
+    background: var(--emerald);
+    color: white;
+  }
+  .offer-btn.on {
+    background: var(--emerald);
+    color: white;
+    border-color: var(--emerald);
+  }
+  .rl-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ── INPUTS ── */
+  .input-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+  }
+  .input-row .label-wrap { flex: 1; }
+  .input-row .label-text {
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 400;
+  }
+  .input-row .label-sub {
+    font-size: 11px;
+    color: var(--text-dim);
+    display: block;
+    margin-top: 1px;
+  }
+  .input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .computed-value {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent-1);
+    padding: 8px 12px;
+    background: var(--gradient-subtle);
+    border: 1px dashed var(--border-hover);
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+  }
+  input[type="number"], input[type="text"] {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    color: var(--accent-5);
+    outline: none;
+    transition: all 0.25s;
+  }
+  input[type="text"] {
+    font-family: var(--font);
+    font-weight: 400;
+    color: var(--white);
+  }
+  input[type="number"]:focus, input[type="text"]:focus {
+    border-color: rgba(124,58,237,0.5);
+    box-shadow: 0 0 0 3px rgba(124,58,237,0.08), 0 0 16px rgba(124,58,237,0.06);
+  }
+  .num-input { width: 140px; text-align: right; }
+  .pct-input { width: 80px; text-align: right; }
+  .text-input { width: 100%; margin-top: 6px; }
+  .unit {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-left: 2px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+
+  .info-box {
+    margin-top: 10px;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 450;
+    letter-spacing: 0.2px;
+    border: 1px solid;
+  }
+  .info-blue {
+    background: rgba(124,58,237,0.06);
+    border-color: rgba(124,58,237,0.15);
+    color: var(--accent-5);
+  }
+  .info-warn {
+    background: rgba(249,115,22,0.06);
+    border-color: rgba(249,115,22,0.2);
+    color: #C2410C;
+  }
+
+  .form-row { display: flex; gap: 16px; padding-top: 4px; }
+  .form-row > div { flex: 1; }
+  .form-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-dim);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 10px 0;
+  }
+
+  /* ── RESULT CARD ── */
+  .result-card {
+    border-radius: 18px;
+    overflow: hidden;
+    background: var(--bg-card);
+    position: relative;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04);
+  }
+  /* Gradient border glow */
+  .result-card::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: 19px;
+    padding: 1px;
+    background: linear-gradient(160deg, var(--accent-1), transparent 30%, transparent 70%, var(--accent-3));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    animation: borderGlow 4s ease-in-out infinite;
+  }
+
+  .result-hero {
+    padding: 32px 28px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(175deg, #0D0B14 0%, #110F1A 100%);
+  }
+  /* Subtle radial glow behind the amount */
+  .result-hero::before {
+    content: "";
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 300px;
+    height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(52,211,153,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .result-hero .label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: #7A7590;
+    margin-bottom: 10px;
+    font-weight: 500;
+    position: relative;
+  }
+  .result-hero .amount {
+    font-family: var(--mono);
+    font-size: 46px;
+    font-weight: 700;
+    position: relative;
+    color: #34D399;
+    text-shadow: 0 0 40px rgba(52,211,153,0.3);
+  }
+  .result-hero .sub {
+    font-size: 12px;
+    color: #7A7590;
+    margin-top: 6px;
+    font-family: var(--mono);
+    font-weight: 400;
+    position: relative;
+  }
+  .result-hero .client {
+    font-size: 14px;
+    font-weight: 450;
+    margin-top: 14px;
+    letter-spacing: 1px;
+    position: relative;
+    background: var(--gradient);
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradientShift 4s ease infinite;
+  }
+
+  .result-body { padding: 24px 24px 20px; }
+  .result-section-title {
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+    margin-top: 16px;
+  }
+  .result-section-title:first-child { margin-top: 0; }
+
+  .result-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+  }
+  .result-line .rl-label {
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 400;
+  }
+  .result-line .rl-label.accent {
+    font-weight: 500;
+    color: var(--white);
+  }
+  .result-line .rl-sub {
+    font-size: 11px;
+    color: var(--text-dim);
+    display: block;
+  }
+  .result-line .rl-value {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+    white-space: nowrap;
+    font-weight: 500;
+  }
+  .result-line .rl-value.accent {
+    font-weight: 700;
+    background: var(--gradient);
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .result-accent-border {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 2px solid;
+    border-image: var(--gradient) 1;
+  }
+  .var-costs {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 2;
+    font-weight: 400;
+  }
+
+  .result-footer {
+    padding: 16px 24px;
+    background: var(--bg);
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.5px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ── EXPORT BTN ── */
+  .export-btn {
+    display: block;
+    width: 100%;
+    margin-top: 14px;
+    padding: 16px;
+    border-radius: var(--radius);
+    border: none;
+    background: var(--gradient);
+    background-size: 200% 100%;
+    color: var(--white);
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.4s;
+    animation: gradientShift 5s ease infinite;
+    position: relative;
+    overflow: hidden;
+  }
+  .export-btn::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(rgba(255,255,255,0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .export-btn:hover::before { opacity: 1; }
+  .export-btn:hover {
+    box-shadow: 0 4px 32px rgba(124,58,237,0.3), 0 2px 16px rgba(236,72,153,0.2);
+    transform: translateY(-1px);
+  }
+  .export-btn:active { transform: translateY(0); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 960px) {
+    .layout { flex-direction: column; }
+    .form-col, .result-col { width: 100%; }
+    .result-col { position: static; }
+    .form-row { flex-direction: column; gap: 8px; }
+    .container { padding: 20px 16px; }
+    .header { padding: 16px; }
+  }
+
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type=number] { -moz-appearance: textfield; }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent-1); }
+
+  /* ── LANG SWITCH ── */
+  .lang-switch {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .lang-toggle {
+    display: flex;
+    align-items: center;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 3px;
+    cursor: pointer;
+    position: relative;
+  }
+  .lang-toggle .lang-opt {
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    border-radius: 16px;
+    transition: all 0.25s;
+    position: relative;
+    z-index: 1;
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-family: var(--font);
+  }
+  .lang-toggle .lang-opt.active {
+    color: #FFFFFF;
+  }
+  .lang-toggle .lang-slider {
+    position: absolute;
+    top: 3px;
+    height: calc(100% - 6px);
+    border-radius: 16px;
+    background: var(--gradient);
+    background-size: 200% 100%;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s;
+    z-index: 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ HEADER ═══ -->
+<div class="header">
+  <div class="header-inner">
+    <div class="header-left">
+      <svg width="140" height="24" viewBox="0 0 896 152" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <g clip-path="url(#hc)">
+          <path d="M45.79 3.73C44.7 2.64 45.47 0.78 47.01 0.78H93.5C94.41 0.78 95.3 1.14 95.94 1.79L163.38 69.23C166.97 72.83 166.97 78.66 163.38 82.25L147.9 97.73C147.47 98.17 146.89 98.41 146.28 98.41H97.91C96.89 98.41 96.38 97.16 97.1 96.44L111.29 82.25C114.89 78.65 114.89 72.82 111.29 69.23L45.79 3.73Z" fill="url(#ig1)"/>
+          <path d="M121.26 147.83C122.34 148.92 121.58 150.78 120.04 150.78H73.55C72.64 150.78 71.76 150.42 71.11 149.77L3.67 82.33C0.07 78.73 0.07 72.9 3.67 69.31L19.15 53.83C19.58 53.39 20.16 53.15 20.78 53.15H69.14C70.16 53.15 70.67 54.4 69.95 55.12L55.76 69.31C52.16 72.91 52.16 78.74 55.76 82.33L121.26 147.83Z" fill="url(#ig2)"/>
+        </g>
+        <path d="M851.715 122.987C822.774 122.987 806.133 103.633 806.133 77.4055C806.133 49.5501 824.945 31.643 852.077 31.643C877.219 31.643 895.126 47.0178 895.126 77.4055V83.1936H828.381C830.19 95.1316 837.425 104.176 848.459 104.176H855.694C864.557 104.176 870.345 98.5684 871.973 91.6949H893.86C892.232 109.602 877.038 122.987 851.715 122.987ZM829.286 67.638H872.697C871.431 56.9661 864.015 50.4545 856.056 50.4545H847.374C838.692 50.4545 831.818 57.3279 829.286 67.638Z" fill="var(--white)"/>
+        <path d="M759.33 119.941V52.6542H743.774V34.0237H759.33C759.33 31.8694 759.33 29.7152 759.33 27.561C759.33 12.6493 771.418 0.561 786.33 0.561H803.464V19.0107H788.813C781.624 19.0013 781.578 19.0013 781.578 19.0013V34.0237H803.464V52.6542H781.939V119.941H759.33Z" fill="var(--white)"/>
+        <path d="M682.689 122.987C658.452 122.987 642.172 103.995 642.172 77.2246C642.172 50.4545 659.175 31.643 683.232 31.643C695.894 31.643 705.842 37.612 711.449 44.4855V34.3562H733.336V120.274H711.449V108.155C705.299 116.295 696.617 122.987 682.689 122.987ZM693.542 103.452C703.31 103.452 710.726 95.4934 710.726 84.4598V70.7129C710.726 60.5837 704.214 51.178 693.542 51.178H683.594C672.922 51.178 664.601 62.5734 664.601 77.2246C664.601 91.8758 672.922 103.452 683.594 103.452H693.542Z" fill="var(--white)"/>
+        <path d="M596.699 122.987C570.653 122.987 558.353 113.22 557.629 94.2273H579.154C580.058 100.92 584.038 105.261 592.901 105.261H604.115C611.893 105.261 615.33 101.462 615.33 96.2169C615.33 91.3332 612.436 88.0774 605.562 87.3538L585.666 85.1833C568.482 83.1936 560.162 73.0644 560.162 58.9558C560.162 40.687 574.27 31.643 597.242 31.643C619.852 31.643 633.96 40.687 634.684 60.4028H613.159C612.436 53.7103 609.361 49.3692 600.86 49.3692H591.273C584.038 49.3692 580.42 52.9868 580.42 58.2323C580.42 63.2969 584.038 66.5527 590.73 67.2763L610.627 69.4468C626.725 71.2556 635.769 79.9378 635.769 94.9508C635.769 113.581 623.108 122.987 596.699 122.987Z" fill="var(--white)"/>
+        <path d="M526.988 120.273V54.2524H515.774V34.3557H549.417V120.273H526.988ZM524.999 22.4177V0.893H549.96V22.4177H524.999Z" fill="var(--white)"/>
+        <path d="M456.974 122.989C437.439 122.989 424.778 111.774 424.778 89.1643V34.3579H447.388V84.8232C447.388 96.0377 452.633 102.368 460.049 102.368H469.093C476.871 102.368 483.744 95.3142 483.744 84.8232V34.3579H506.173V120.276H484.468V108.337C479.584 117.201 471.083 122.989 456.974 122.989Z" fill="var(--white)"/>
+        <path d="M392.128 109.059C387.063 116.295 378.743 122.987 364.634 122.987C340.216 122.987 323.575 103.995 323.575 77.4055C323.575 50.4545 340.758 31.643 365.358 31.643C378.562 31.643 386.521 37.4312 392.851 44.8472V34.3562H414.738V151.023H392.128V109.059ZM374.944 103.452C384.712 103.452 392.128 95.4934 392.128 84.4598V70.7129C392.128 60.5837 385.616 51.178 374.944 51.178H364.996C354.324 51.178 346.004 62.5734 346.004 77.4055C346.004 91.8758 354.324 103.452 364.996 103.452H374.944Z" fill="var(--white)"/>
+        <path d="M271.465 122.987C242.524 122.987 225.883 103.633 225.883 77.4055C225.883 49.5501 244.695 31.643 271.827 31.643C296.969 31.643 314.876 47.0178 314.876 77.4055V83.1936H248.131C249.94 95.1316 257.175 104.176 268.209 104.176H275.444C284.307 104.176 290.095 98.5684 291.723 91.6949H313.61C311.982 109.602 296.788 122.987 271.465 122.987ZM249.036 67.638H292.447C291.181 56.9661 283.765 50.4545 275.806 50.4545H267.124C258.442 50.4545 251.568 57.3279 249.036 67.638Z" fill="var(--white)"/>
+        <defs>
+          <linearGradient id="ig1" x1="44" y1="0" x2="162" y2="97" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#EC4899"/>
+            <stop offset="100%" stop-color="#7C3AED"/>
+          </linearGradient>
+          <linearGradient id="ig2" x1="0" y1="52" x2="120" y2="150" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#4F46E5"/>
+            <stop offset="100%" stop-color="#EC4899"/>
+          </linearGradient>
+          <clipPath id="hc"><rect width="165.114" height="150" fill="white" transform="translate(0.969 0.78)"/></clipPath>
+        </defs>
+      </svg>
+    </div>
+    <div class="lang-switch">
+      <span class="header-right" id="headerTitle">Custom Pricing Calculator</span>
+      <div class="lang-toggle" id="langToggle">
+        <div class="lang-slider" id="langSlider"></div>
+        <button class="lang-opt active" id="langFR" onclick="setLang('fr')">FR</button>
+        <button class="lang-opt" id="langEN" onclick="setLang('en')">EN</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MAIN ═══ -->
+<div class="container">
+  <div class="layout">
+    <div class="form-col" id="formCol"></div>
+    <div class="result-col">
+      <div class="result-card">
+        <div class="result-hero">
+          <div class="label" id="heroLabelText">Custom Monthly Subscription</div>
+          <div class="amount" id="heroAmount">&mdash;</div>
+          <div class="sub" id="heroSub"></div>
+          <div class="client" id="heroClient"></div>
+        </div>
+        <div class="result-body" id="resultBody"></div>
+        <div class="result-footer" id="resultFooter"></div>
+      </div>
+      <button class="export-btn" id="exportBtn" onclick="handleExport()">Export PDF</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── PRICING GRID ────────────────────────────────────────────────
+const PRICING = {
+  setup: 19900, scsp_creation: 500, scsp_isin: 2500, scsp_ext_bank: 2500,
+  scsp_fatca: 7500, scsp_extra_nav: 1800, scsp_audited_nav: 2500, scsp_secondary_equity: 500,
+  vip_tiers: [
+    { limit: 1000000, rate: 0.015 }, { limit: 2000000, rate: 0.0125 },
+    { limit: 5000000, rate: 0.01 }, { limit: 10000000, rate: 0.008 },
+    { limit: 25000000, rate: 0.0055 }, { limit: 50000000, rate: 0.0045 },
+    { limit: 100000000, rate: 0.0033 },
+  ],
+  psfp_creation: 1500, psfp_audit: 2500, psfp_admin_rate: 0.06, psfp_closing: 2900,
+  bank_fee: 0.001, fx_fee: 0.0035,
+  crypto_tiers: [
+    { limit: 1000000, rate: 0.0085 }, { limit: 5000000, rate: 0.0068 },
+    { limit: 10000000, rate: 0.0051 }, { limit: 50000000, rate: 0.0034 },
+    { limit: 100000000, rate: 0.00272 }, { limit: Infinity, rate: 0.00136 },
+  ],
+  kyc_natural: 4.5, kyb_entity: 4.5, esignature: 2,
+  iban_investor_mo: 1, wallet_investor_mo: 1, iban_entity_mo: 95, wallet_entity_mo: 1,
+  tokenisation_rate: 0.003, sma_monthly: 500,
+};
+
+function getVipRate(v) { for (const t of PRICING.vip_tiers) if (v <= t.limit) return t.rate; return 0.0033; }
+function getCryptoRate(v) { for (const t of PRICING.crypto_tiers) if (v <= t.limit) return t.rate; return 0.00136; }
+function fmt(n) { if (n === 0) return "\u2014"; return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n); }
+function fmtDec(n) { if (n === 0) return "\u2014"; return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 2 }).format(n); }
+function fmtPct(n) { return (n * 100).toFixed(2) + "%"; }
+
+// ─── i18n ────────────────────────────────────────────────────────
+let lang = "fr";
+const I = {
+  headerTitle:        { fr: "Calculateur de Tarification", en: "Custom Pricing Calculator" },
+  clientInfo:         { fr: "Informations Client", en: "Client Information" },
+  clientName:         { fr: "Nom du client", en: "Client name" },
+  preparedBy:         { fr: "Pr\u00e9par\u00e9 par", en: "Prepared by" },
+  options:            { fr: "Options", en: "Options" },
+  tokenisation:       { fr: "Tokenisation", en: "Tokenisation" },
+  tokenSub:           { fr: "0,3% de l\u2019AUM annuel", en: "0.3% of annual AUM" },
+  tokenAUM:           { fr: "AUM (encours sous gestion)", en: "AUM (assets under management)" },
+  tokenAUMSub:        { fr: "Encours annuel total", en: "Total annual AUM" },
+  tokenInvestors:     { fr: "Investisseurs", en: "Investors" },
+  tokenInvSub:        { fr: "KYC + IBAN + Wallet inclus", en: "KYC + IBAN + Wallet included" },
+  tokenTx:            { fr: "Transactions token", en: "Token transactions" },
+  tokenTxSub:         { fr: "Frais bancaires 0,10%", en: "Bank fees 0.10%" },
+  tokenProj:          { fr: "Tokenisation (12 mois)", en: "Tokenisation (12 months)" },
+  scspLabel:          { fr: "SPV \u2014 SCSP Luxembourg", en: "SPV \u2014 SCSP Luxembourg" },
+  scspSub:            { fr: "Lev\u00e9e de fonds priv\u00e9e (Lux)", en: "Private fundraising (Lux)" },
+  psfpLabel:          { fr: "PSFP \u2014 Offre publique r\u00e9gul\u00e9e", en: "PSFP \u2014 Regulated public offering" },
+  psfpSub:            { fr: "R\u00e9gul\u00e9 AMF, 6% HT sur le volume", en: "AMF-regulated, 6% HT on volume" },
+  smaLabel:           { fr: "SMA DeFi", en: "SMA DeFi" },
+  smaSub:             { fr: "500\u20AC/mois suppl\u00e9mentaire", en: "\u20AC500/month additional" },
+  isinLabel:          { fr: "Code ISIN par SPV", en: "ISIN code per SPV" },
+  isinSub:            { fr: "2 500\u20AC par SPV (optionnel)", en: "\u20AC2,500 per SPV (optional)" },
+  extBankLabel:       { fr: "Banque externe par SCSP", en: "External bank per SCSP" },
+  extBankSub:         { fr: "2 500\u20AC par SCSP", en: "\u20AC2,500 per SCSP" },
+  fatcaLabel:         { fr: "FATCA US-person par SCSP", en: "FATCA US-person per SCSP" },
+  fatcaSub:           { fr: "7 500\u20AC par SCSP", en: "\u20AC7,500 per SCSP" },
+  spvProj:            { fr: "Projections SPV (12 mois)", en: "SPV Projections (12 months)" },
+  scspCreatedYear:    { fr: "SCSP cr\u00e9\u00e9s / an", en: "SCSP created / year" },
+  avgVolSPV:          { fr: "Vol. moyen lev\u00e9 par SPV", en: "Avg. volume raised per SPV" },
+  psfpProj:           { fr: "Projections PSFP (12 mois)", en: "PSFP Projections (12 months)" },
+  psfpOpsYear:        { fr: "Op\u00e9rations PSFP / an", en: "PSFP operations / year" },
+  psfpVolYear:        { fr: "Volume total PSFP lev\u00e9 / an", en: "PSFP total volume raised / year" },
+  psfpVolSub:         { fr: "Pour le calcul des frais admin 6% HT", en: "For 6% HT admin fee calculation" },
+  investorsTitle:     { fr: "Investisseurs & Utilisateurs (12 mois)", en: "Investors & Users (12 months)" },
+  newNatural:         { fr: "Nouveaux investisseurs (PP + PM)", en: "New investors (individuals + entities)" },
+  newNaturalSub:      { fr: "KYC/KYB : 4,50\u20AC chacun", en: "KYC/KYB: \u20AC4.50 each" },
+  activeInv:          { fr: "Investisseurs actifs totaux (cumulatif)", en: "Total active investors (cumulative)" },
+  activeInvSub:       { fr: "Pour co\u00fbts mensuels IBAN + wallet", en: "For IBAN + wallet monthly costs" },
+  projOwners:         { fr: "Nombre de projets", en: "Number of projects" },
+  projOwnersSub:      { fr: "= SPV + PSFP \u00B7 IBAN entit\u00e9 : 95\u20AC/mois", en: "= SPVs + PSFP \u00B7 IBAN entity: \u20AC95/month" },
+  volumeTitle:        { fr: "Projections de Volume (12 mois)", en: "Volume Projections (12 months)" },
+  volY1:              { fr: "Volume d\u2019investissement (12 mois)", en: "Investment volume (12 months)" },
+  payIn:              { fr: "Transactions Pay-in", en: "Pay-in transactions" },
+  payOut:             { fr: "Transactions Pay-out", en: "Pay-out transactions" },
+  eSig:               { fr: "Nombre de souscriptions", en: "Number of subscriptions" },
+  currencyTitle:      { fr: "Devises & Mix de Paiement", en: "Currency & Payment Mix" },
+  cryptoSwap:         { fr: "% Crypto swap", en: "% Crypto swap" },
+  heroLabel:          { fr: "Abonnement Mensuel Sur-Mesure", en: "Custom Monthly Subscription" },
+  perMonth:           { fr: "par mois (exact :", en: "per month (exact:" },
+  setupTitle:         { fr: "Frais Unique", en: "One-Time Fees" },
+  sdkSetup:           { fr: "SDK / Configuration plateforme", en: "SDK / Platform setup" },
+  sdkSub:             { fr: "19\u00A0900\u20AC \u2014 offert si non s\u00e9lectionn\u00e9", en: "\u20AC19,900 \u2014 waived if not selected" },
+  spvCreation:        { fr: "Cr\u00e9ation SPV SCSP", en: "SPV SCSP creation" },
+  psfpCreation:       { fr: "Création PSFP", en: "PSFP creation" },
+  psfpAudit:          { fr: "Audit PSFP", en: "PSFP audit" },
+  isinCodes:          { fr: "Codes ISIN", en: "ISIN codes" },
+  extBankSCSP:        { fr: "Banque externe (SCSP)", en: "External bank (SCSP)" },
+  fatcaUS:            { fr: "FATCA US-person", en: "FATCA US-person" },
+  totalSetup:         { fr: "Total frais unique", en: "Total one-time fees" },
+  annualTitle:        { fr: "Frais Variable", en: "Variable Fees" },
+  tokenFee:           { fr: "Tokenisation (0,3% AUM)", en: "Tokenisation (0.3% AUM)" },
+  spvAdmin:           { fr: "Admin SPV SCSP", en: "SPV SCSP admin" },
+  psfpFees:           { fr: "Frais PSFP", en: "PSFP fees" },
+  psfpFeeSub:         { fr: "6% HT admin", en: "6% HT admin" },
+  bankKYC:            { fr: "Bancaire & KYC", en: "Banking & KYC" },
+  bankKYCSub:         { fr: "KYC, KYB, signatures, IBAN, wallets, frais bancaires", en: "KYC, KYB, signatures, IBAN, wallets, bank fees" },
+  fxCrypto:           { fr: "Frais FX & Crypto", en: "FX & Crypto fees" },
+  smaDeFi:            { fr: "SMA DeFi", en: "SMA DeFi" },
+  smaFeeSub:          { fr: "500\u20AC/mois \u00D7 12", en: "\u20AC500/month \u00D7 12" },
+  totalAnnual:        { fr: "Total variable (12 mois)", en: "Total variable (12 months)" },
+  keyMetrics:         { fr: "Indicateurs Cl\u00e9s", en: "Key Metrics" },
+  costPerInv:         { fr: "Co\u00fbt par investisseur", en: "Cost per investor" },
+  feeVolPct:          { fr: "Frais en % du volume", en: "Fee as % of volume" },
+  varCostsTitle:      { fr: "Co\u00fbts Variables (non projet\u00e9s)", en: "Variable Costs (not projected)" },
+  varSecEquity:       { fr: "Cession de titres equity : 500\u20AC / investisseur", en: "Equity title transfer: \u20AC500 / investor" },
+  varSecBond:         { fr: "Cession de titres obligataire : 350\u20AC / investisseur", en: "Bond title transfer: \u20AC350 / investor" },
+  footerPrices:       { fr: "Tous les prix en EUR HT", en: "All prices EUR excl. VAT" },
+  exportPDF:          { fr: "Exporter PDF", en: "Export PDF" },
+  proposal:           { fr: "Proposition Tarifaire Sur-Mesure", en: "Custom Pricing Proposal" },
+  client:             { fr: "Client", en: "Client" },
+  cryptoRateLabel:    { fr: "Taux crypto swap :", en: "Crypto swap rate:" },
+  fxConvLabel:        { fr: "Frais de conversion FX : 0,35% sur", en: "FX conversion fee: 0.35% on" },
+  vipTierLabel:       { fr: "Palier VIP :", en: "VIP Tier:" },
+  appliedOn:          { fr: "appliqu\u00e9 sur", en: "applied on" },
+  totalVolume:        { fr: "volume SCSP total", en: "total SCSP volume" },
+  onVolume:           { fr: "sur", en: "on" },
+  volume:             { fr: "volume", en: "volume" },
+  nonEurVol:          { fr: "volume non-EUR =", en: "non-EUR volume =" },
+};
+function t(key) { return I[key] ? (I[key][lang] || I[key].en) : key; }
+
+const S = {
+  clientName: "", preparedBy: "",
+  optSDK: true, optTokenisation: false, optSCSP: false, optPSFP: false, optSMA: false,
+  nbISIN: 0, nbExtBank: 0, nbFATCA: 0,
+  tokenAUM: 5000000, tokenTx: 500,
+  nbSCSP: 0, avgVolPerSPV: 500000, nbPSFP: 0, psfpVolume: 0,
+  newNatural: 500,
+  nbPayIn: 400, nbPayOut: 100,
+  pctEUR: 1.0, pctGBP: 0, pctUSD: 0, pctCHF: 0, pctAED: 0, pctCrypto: 0,
+  freeSDK: false, freeSCSP: false, freePSFPCreation: false, freePSFPAudit: false, freePSFPClosing: false,
+  freeISIN: false, freeExtBank: false, freeFATCA: false,
+};
+const sections = { client: true, options: true, spv: true, psfp: true, investors: true, volume: true, currency: false };
+
+let calc = {};
+function recalc() {
+  const P = PRICING;
+  S.volY1 = (S.nbSCSP * S.avgVolPerSPV) + (S.optPSFP ? S.psfpVolume : 0);
+  S.activeInvestors = S.newNatural;
+  S.nbSignatures = S.newNatural;
+  S.projectOwners = S.nbSCSP + S.nbPSFP;
+  S.nbPayIn = S.newNatural;
+  S.nbPayOut = S.projectOwners;
+  const setupSDK = S.optSDK && !S.freeSDK ? P.setup : 0;
+  const setupSCSP = S.optSCSP && !S.freeSCSP ? S.nbSCSP * P.scsp_creation : 0;
+  const setupPSFPCreation = S.optPSFP && !S.freePSFPCreation ? S.nbPSFP * P.psfp_creation : 0;
+  const setupPSFP = S.optPSFP && !S.freePSFPAudit ? S.nbPSFP * P.psfp_audit : 0;
+  const setupPSFPClosing = S.optPSFP && !S.freePSFPClosing ? S.nbPSFP * P.psfp_closing : 0;
+  const setupISIN = S.nbISIN > 0 && !S.freeISIN ? S.nbISIN * P.scsp_isin : 0;
+  const setupExtBank = S.nbExtBank > 0 && !S.freeExtBank ? S.nbExtBank * P.scsp_ext_bank : 0;
+  const setupFATCA = S.nbFATCA > 0 && !S.freeFATCA ? S.nbFATCA * P.scsp_fatca : 0;
+  const totalSetup = setupSDK + setupSCSP + setupPSFPCreation + setupPSFP + setupPSFPClosing + setupISIN + setupExtBank + setupFATCA;
+  const scspTotalVol = S.optSCSP ? S.nbSCSP * S.avgVolPerSPV : 0;
+  const scspAdminRate = getVipRate(scspTotalVol);
+  const scspFees = S.optSCSP ? scspTotalVol * scspAdminRate : 0;
+  // Tokenisation — standalone service based on AUM
+  const tokenFees = S.optTokenisation ? S.tokenAUM * P.tokenisation_rate : 0;
+  const tokenKycFees = S.optTokenisation ? S.newNatural * P.kyc_natural : 0;
+  const tokenIbanWallet = S.optTokenisation ? S.newNatural * (P.iban_investor_mo + P.wallet_investor_mo) * 12 : 0;
+  const tokenBankFees = S.optTokenisation ? S.tokenAUM * P.bank_fee : 0;
+  const tokenNonEur = S.optTokenisation && (1 - S.pctEUR) > 0 ? S.tokenAUM * (1 - S.pctEUR) * P.fx_fee : 0;
+  const tokenTotal = tokenFees + tokenKycFees + tokenIbanWallet + tokenBankFees + tokenNonEur;
+  const psfpAdminFees = S.optPSFP ? S.psfpVolume * P.psfp_admin_rate : 0;
+  const psfpTotal = psfpAdminFees;
+  const kycFees = S.newNatural * P.kyc_natural;
+  const kybFees = 0;
+  const sigFees = S.nbSignatures * P.esignature;
+  const ibanWalletInv = S.activeInvestors * (P.iban_investor_mo + P.wallet_investor_mo) * 12;
+  const ibanEntity = S.projectOwners * P.iban_entity_mo * 12;
+  const walletEntity = S.projectOwners * P.wallet_entity_mo * 12;
+  const bankTxFees = S.volY1 * P.bank_fee;
+  const bankingTotal = kycFees + kybFees + sigFees + ibanWalletInv + ibanEntity + walletEntity + bankTxFees;
+  const nonEurPct = 1 - S.pctEUR;
+  const fxFees = nonEurPct > 0 ? S.volY1 * nonEurPct * P.fx_fee : 0;
+  const cryptoVol = S.volY1 * S.pctCrypto;
+  const cryptoRate = getCryptoRate(cryptoVol);
+  const cryptoFees = cryptoVol * cryptoRate;
+  const fxCryptoTotal = fxFees + cryptoFees;
+  const smaFees = S.optSMA ? P.sma_monthly * 12 : 0;
+  const totalAnnual = scspFees + tokenTotal + psfpTotal + bankingTotal + fxCryptoTotal + smaFees;
+  const customMonthly = totalAnnual / 12;
+  const roundedMonthly = Math.ceil(customMonthly / 100) * 100;
+  const costPerInvestor = S.activeInvestors > 0 ? totalAnnual / S.activeInvestors : 0;
+  const feeAsPctVol = S.volY1 > 0 ? totalAnnual / S.volY1 : 0;
+  calc = { setupSDK, setupSCSP, setupPSFPCreation, setupPSFP, setupPSFPClosing, setupISIN, setupExtBank, setupFATCA, totalSetup, scspFees, scspAdminRate, tokenFees, tokenKycFees, tokenIbanWallet, tokenBankFees, tokenNonEur, tokenTotal, psfpAdminFees, psfpTotal, kycFees, kybFees, sigFees, ibanWalletInv, ibanEntity, walletEntity, bankTxFees, bankingTotal, fxFees, cryptoFees, fxCryptoTotal, smaFees, totalAnnual, customMonthly, roundedMonthly, costPerInvestor, feeAsPctVol };
+}
+
+function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+function sectionHTML(id, title, open, content) {
+  return `<div class="section"><button class="section-btn" onclick="toggleSection('${id}')"><span>${esc(title)}</span><span class="icon">${open ? "\u2212" : "+"}</span></button><div class="section-body${open ? "" : " hidden"}" id="sec_${id}">${content}</div></div>`;
+}
+function toggleHTML(key, label, sub) {
+  return `<div class="toggle-row"><div><span class="toggle-label">${esc(label)}</span>${sub ? `<span class="toggle-sub">${esc(sub)}</span>` : ""}</div><button class="toggle-track${S[key] ? " on" : ""}" onclick="toggleVal('${key}')"><span class="toggle-thumb"></span></button></div>`;
+}
+function numHTML(key, label, sub, unit) {
+  return `<div class="input-row"><div class="label-wrap"><span class="label-text">${esc(label)}</span>${sub ? `<span class="label-sub">${esc(sub)}</span>` : ""}</div><div class="input-wrap"><input type="number" class="num-input" value="${S[key]}" oninput="setNum('${key}', this.value)">${unit ? `<span class="unit">${esc(unit)}</span>` : ""}</div></div>`;
+}
+function pctHTML(key, label) {
+  return `<div class="input-row"><div class="label-wrap"><span class="label-text">${esc(label)}</span></div><div class="input-wrap"><input type="number" class="pct-input" value="${Math.round(S[key] * 100)}" min="0" max="100" oninput="setPct('${key}', this.value)"><span class="unit">%</span></div></div>`;
+}
+function resultLine(label, value, opts = {}) {
+  const { accent, sub, freeKey, fullPrice } = opts;
+  const isFree = freeKey && S[freeKey];
+  const offertLabel = lang === "fr" ? "Offert" : "Waived";
+  const offrirLabel = lang === "fr" ? "Offrir" : "Waive";
+  const displayValue = isFree ? `<span style="text-decoration:line-through;opacity:0.45">${fullPrice || value}</span> <span style="color:var(--emerald);font-weight:600">${offertLabel}</span>` : value;
+  const offerHTML = freeKey ? `<button class="offer-btn${isFree ? ' on' : ''}" onclick="toggleFree('${freeKey}')">${isFree ? offertLabel + ' ✓' : offrirLabel}</button>` : '';
+  return `<div class="result-line"><div><span class="rl-label${accent ? " accent" : ""}">${label}</span>${sub ? `<span class="rl-sub">${esc(sub)}</span>` : ""}</div><div class="rl-right"><span class="rl-value${accent ? " accent" : ""}">${displayValue}</span>${offerHTML}</div></div>`;
+}
+
+function renderForm() {
+  let h = "";
+  h += sectionHTML("client", t("clientInfo"), sections.client,
+    `<div class="form-row"><div style="flex:1"><div class="form-label">${t("clientName")}</div><input type="text" class="text-input" value="${esc(S.clientName)}" placeholder="e.g. SGH Capital" oninput="setStr('clientName', this.value)"></div></div>`);
+
+  let opt = toggleHTML("optSDK", t("sdkSetup"), t("sdkSub"));
+  opt += '<hr class="divider">';
+  opt += toggleHTML("optTokenisation", t("tokenisation"), t("tokenSub"));
+  opt += toggleHTML("optSCSP", t("scspLabel"), t("scspSub"));
+  opt += toggleHTML("optPSFP", t("psfpLabel"), t("psfpSub"));
+  opt += toggleHTML("optSMA", t("smaLabel"), t("smaSub"));
+  if (S.optSCSP) {
+    opt += '<hr class="divider">';
+    opt += numHTML("nbISIN", t("isinLabel"), t("isinSub"), "");
+    opt += numHTML("nbExtBank", t("extBankLabel"), t("extBankSub"), "");
+    opt += numHTML("nbFATCA", t("fatcaLabel"), t("fatcaSub"), "");
+  }
+  h += sectionHTML("options", t("options"), sections.options, opt);
+
+  if (S.optSCSP) {
+    let spv = numHTML("nbSCSP", t("scspCreatedYear"), "", "") + numHTML("avgVolPerSPV", t("avgVolSPV"), "", "\u20AC");
+    spv += `<div class="info-box info-blue">${t("vipTierLabel")} ${fmtPct(calc.scspAdminRate)} ${t("appliedOn")} ${fmt(S.nbSCSP * S.avgVolPerSPV)} ${t("totalVolume")}</div>`;
+    h += sectionHTML("spv", t("spvProj"), sections.spv, spv);
+  }
+  if (S.optPSFP) {
+    h += sectionHTML("psfp", t("psfpProj"), sections.psfp,
+      numHTML("nbPSFP", t("psfpOpsYear"), "", "") + numHTML("psfpVolume", t("psfpVolYear"), t("psfpVolSub"), "\u20AC"));
+  }
+
+  if (S.optTokenisation) {
+    let tok = numHTML("tokenAUM", t("tokenAUM"), t("tokenAUMSub"), "\u20AC");
+    tok += `<div class="info-box info-blue">${lang === "fr" ? "Frais tokenisation" : "Tokenisation fee"}: 0,3% \u00D7 ${fmt(S.tokenAUM)} = ${fmt(calc.tokenFees)} + ${lang === "fr" ? "frais bancaires" : "banking fees"}: ${fmt(calc.tokenKycFees + calc.tokenIbanWallet + calc.tokenBankFees + calc.tokenNonEur)}</div>`;
+    h += sectionHTML("token", t("tokenProj"), true, tok);
+  }
+
+  let inv = numHTML("newNatural", t("newNatural"), t("newNaturalSub"), "");
+  const poSub = lang === "fr" ? `= ${S.nbSCSP} SPV + ${S.nbPSFP} PSFP \u00B7 IBAN entit\u00e9 : 95\u20AC/mois` : `= ${S.nbSCSP} SPVs + ${S.nbPSFP} PSFP \u00B7 IBAN entity: \u20AC95/month`;
+  inv += `<div class="input-row"><div class="label-wrap"><span class="label-text">${t("projOwners")}</span><span class="label-sub">${poSub}</span></div><div class="input-wrap"><span class="computed-value">${S.projectOwners}</span></div></div>`;
+  h += sectionHTML("investors", t("investorsTitle"), sections.investors, inv);
+
+  const volParts = [];
+  if (S.nbSCSP > 0) volParts.push(`${S.nbSCSP} SPV \u00D7 ${fmt(S.avgVolPerSPV)}`);
+  if (S.optPSFP && S.psfpVolume > 0) volParts.push(`PSFP ${fmt(S.psfpVolume)}`);
+  const volY1Sub = volParts.length > 0 ? `= ${volParts.join(" + ")}` : (lang === "fr" ? "Aucun SPV ou PSFP actif" : "No active SPV or PSFP");
+  const payInSub = lang === "fr" ? `= ${S.newNatural} investisseurs` : `= ${S.newNatural} investors`;
+  const payOutSub = lang === "fr" ? `= ${S.nbSCSP} SPV + ${S.nbPSFP} PSFP` : `= ${S.nbSCSP} SPV + ${S.nbPSFP} PSFP`;
+  let vol = `<div class="input-row"><div class="label-wrap"><span class="label-text">${t("volY1")}</span><span class="label-sub">${volY1Sub}</span></div><div class="input-wrap"><span class="computed-value">${fmt(S.volY1)}</span></div></div>` + '<hr class="divider">';
+  vol += `<div class="input-row"><div class="label-wrap"><span class="label-text">${t("payIn")}</span><span class="label-sub">${payInSub}</span></div><div class="input-wrap"><span class="computed-value">${S.nbPayIn}</span></div></div>`;
+  vol += `<div class="input-row"><div class="label-wrap"><span class="label-text">${t("payOut")}</span><span class="label-sub">${payOutSub}</span></div><div class="input-wrap"><span class="computed-value">${S.nbPayOut}</span></div></div>`;
+  h += sectionHTML("volume", t("volumeTitle"), sections.volume, vol);
+
+  let cur = pctHTML("pctEUR", "% EUR") + pctHTML("pctGBP", "% GBP") + pctHTML("pctUSD", "% USD") + pctHTML("pctCHF", "% CHF") + pctHTML("pctAED", "% AED") + '<hr class="divider">' + pctHTML("pctCrypto", t("cryptoSwap"));
+  if (S.pctCrypto > 0) cur += `<div class="info-box info-blue">${t("cryptoRateLabel")} ${fmtPct(getCryptoRate(S.volY1 * S.pctCrypto))} ${t("onVolume")} ${fmt(S.volY1 * S.pctCrypto)} ${t("volume")}</div>`;
+  if ((1 - S.pctEUR) > 0.001) cur += `<div class="info-box info-warn">${t("fxConvLabel")} ${fmtPct(1 - S.pctEUR)} ${t("nonEurVol")} ${fmt(S.volY1 * (1 - S.pctEUR))}</div>`;
+  h += sectionHTML("currency", t("currencyTitle"), sections.currency, cur);
+
+  document.getElementById("formCol").innerHTML = h;
+}
+
+function renderResults() {
+  document.getElementById("heroAmount").textContent = fmt(calc.roundedMonthly);
+  document.getElementById("heroSub").textContent = `${t("perMonth")} ${fmtDec(calc.customMonthly)})`;
+  document.getElementById("heroClient").textContent = S.clientName || "";
+
+  const P = PRICING;
+  let h = `<p class="result-section-title">${t("setupTitle")}</p>`;
+  h += resultLine(t("sdkSetup"), S.optSDK ? fmt(P.setup) : fmt(0), { freeKey: "freeSDK", fullPrice: fmt(P.setup) });
+  if (S.optSCSP) h += resultLine(t("spvCreation"), fmt(S.nbSCSP * P.scsp_creation), { freeKey: "freeSCSP", fullPrice: fmt(S.nbSCSP * P.scsp_creation) });
+  if (S.optPSFP) h += resultLine(t("psfpCreation"), fmt(S.nbPSFP * P.psfp_creation), { freeKey: "freePSFPCreation", fullPrice: fmt(S.nbPSFP * P.psfp_creation) });
+  if (S.optPSFP) h += resultLine(t("psfpAudit"), fmt(S.nbPSFP * P.psfp_audit), { freeKey: "freePSFPAudit", fullPrice: fmt(S.nbPSFP * P.psfp_audit) });
+  if (S.optPSFP) h += resultLine(lang === "fr" ? "Clôture PSFP" : "PSFP closing", fmt(S.nbPSFP * P.psfp_closing), { freeKey: "freePSFPClosing", fullPrice: fmt(S.nbPSFP * P.psfp_closing) });
+  if (S.nbISIN > 0) h += resultLine(t("isinCodes"), fmt(S.nbISIN * P.scsp_isin), { freeKey: "freeISIN", fullPrice: fmt(S.nbISIN * P.scsp_isin) });
+  if (S.nbExtBank > 0) h += resultLine(t("extBankSCSP"), fmt(S.nbExtBank * P.scsp_ext_bank), { freeKey: "freeExtBank", fullPrice: fmt(S.nbExtBank * P.scsp_ext_bank) });
+  if (S.nbFATCA > 0) h += resultLine(t("fatcaUS"), fmt(S.nbFATCA * P.scsp_fatca), { freeKey: "freeFATCA", fullPrice: fmt(S.nbFATCA * P.scsp_fatca) });
+  const fullSetup = (S.optSDK ? P.setup : 0)
+    + (S.optSCSP ? S.nbSCSP * P.scsp_creation : 0)
+    + (S.optPSFP ? S.nbPSFP * P.psfp_creation : 0)
+    + (S.optPSFP ? S.nbPSFP * P.psfp_audit : 0)
+    + (S.optPSFP ? S.nbPSFP * P.psfp_closing : 0)
+    + (S.nbISIN > 0 ? S.nbISIN * P.scsp_isin : 0)
+    + (S.nbExtBank > 0 ? S.nbExtBank * P.scsp_ext_bank : 0)
+    + (S.nbFATCA > 0 ? S.nbFATCA * P.scsp_fatca : 0);
+  const setupDiscount = fullSetup - calc.totalSetup;
+  if (setupDiscount > 0) {
+    h += `<div class="result-line"><div><span class="rl-label accent">${t("totalSetup")}</span></div><div class="rl-right"><span class="rl-value" style="opacity:0.4;text-decoration:line-through">${fmt(fullSetup)}</span><span class="rl-value accent">${fmt(calc.totalSetup)}</span></div></div>`;
+  } else {
+    h += resultLine(t("totalSetup"), fmt(calc.totalSetup), { accent: true });
+  }
+  h += '<hr class="divider">';
+  h += `<p class="result-section-title">${t("annualTitle")}</p>`;
+  if (calc.tokenTotal > 0) h += resultLine(t("tokenFee"), fmt(calc.tokenTotal), { sub: `0,3% AUM + ${lang === "fr" ? "frais bancaires" : "banking"}` });
+  if (calc.scspFees > 0) h += resultLine(t("spvAdmin"), fmt(calc.scspFees), { sub: `VIP tier: ${fmtPct(calc.scspAdminRate)}` });
+  if (calc.psfpTotal > 0) h += resultLine(t("psfpFees"), fmt(calc.psfpTotal), { sub: t("psfpFeeSub") });
+  h += resultLine(t("bankKYC"), fmt(calc.bankingTotal), { sub: t("bankKYCSub") });
+  if (calc.fxCryptoTotal > 0) h += resultLine(t("fxCrypto"), fmt(calc.fxCryptoTotal));
+  if (calc.smaFees > 0) h += resultLine(t("smaDeFi"), fmt(calc.smaFees), { sub: t("smaFeeSub") });
+  h += '<div class="result-accent-border">' + resultLine(t("totalAnnual"), fmt(calc.totalAnnual), { accent: true }) + '</div>';
+  h += '<hr class="divider">';
+  h += `<p class="result-section-title">${t("keyMetrics")}</p>`;
+  h += resultLine(t("costPerInv"), fmtDec(calc.costPerInvestor));
+  h += resultLine(t("feeVolPct"), fmtPct(calc.feeAsPctVol));
+  h += '<hr class="divider">';
+  h += `<p class="result-section-title">${t("varCostsTitle")}</p>`;
+  h += `<div class="var-costs">\u2022 ${t("varSecEquity")}<br>\u2022 ${t("varSecBond")}</div>`;
+  document.getElementById("resultBody").innerHTML = h;
+  const dateLang = lang === "fr" ? "fr-FR" : "en-GB";
+  const today = new Date().toLocaleDateString(dateLang, { day: "2-digit", month: "long", year: "numeric" });
+  document.getElementById("resultFooter").textContent = `ops@equisafe.io \u2022 ${t("footerPrices")} \u2022 ${today}`;
+
+  // Update header title and export button
+  document.getElementById("headerTitle").textContent = t("headerTitle");
+  document.getElementById("heroLabelText").textContent = t("heroLabel");
+  document.getElementById("exportBtn").textContent = t("exportPDF");
+}
+
+function toggleSection(id) { sections[id] = !sections[id]; render(); }
+function toggleVal(key) { S[key] = !S[key]; render(); }
+function toggleFree(key) { S[key] = !S[key]; recalc(); renderResults(); }
+function setNum(key, val) { S[key] = Number(val) || 0; recalc(); renderResults(); }
+function setPct(key, val) {
+  const v = Math.min(100, Math.max(0, Number(val) || 0)) / 100;
+  const fiats = ["pctGBP", "pctUSD", "pctCHF", "pctAED"];
+  if (key === "pctEUR") {
+    S.pctEUR = v;
+    // Scale others proportionally to fill the remainder
+    const othersSum = fiats.reduce((s, k) => s + S[k], 0);
+    const remaining = Math.max(0, 1 - v);
+    if (othersSum > 0) {
+      const scale = remaining / othersSum;
+      fiats.forEach(k => { S[k] = +(S[k] * scale).toFixed(4); });
+    }
+  } else if (fiats.includes(key)) {
+    // Clamp: cannot exceed what's left after other non-EUR fiats
+    const othersSum = fiats.filter(k => k !== key).reduce((s, k) => s + S[k], 0);
+    S[key] = Math.min(v, +(1 - othersSum).toFixed(4));
+    S.pctEUR = Math.max(0, +(1 - othersSum - S[key]).toFixed(4));
+  } else {
+    // Crypto — independent
+    S[key] = v;
+  }
+  recalc(); render();
+}
+function setStr(key, val) { S[key] = val; recalc(); renderResults(); }
+function render() { recalc(); renderForm(); renderResults(); }
+
+// ─── LANG SWITCH ─────────────────────────────────────────────────
+function setLang(l) {
+  lang = l;
+  document.getElementById("langFR").classList.toggle("active", l === "fr");
+  document.getElementById("langEN").classList.toggle("active", l === "en");
+  updateLangSlider();
+  render();
+}
+function updateLangSlider() {
+  const fr = document.getElementById("langFR");
+  const en = document.getElementById("langEN");
+  const slider = document.getElementById("langSlider");
+  const active = lang === "fr" ? fr : en;
+  slider.style.left = active.offsetLeft + "px";
+  slider.style.width = active.offsetWidth + "px";
+}
+
+// ─── PDF EXPORT ──────────────────────────────────────────────────
+function handleExport() {
+  const dateLang = lang === "fr" ? "fr-FR" : "en-GB";
+  const today = new Date().toLocaleDateString(dateLang, { day: "2-digit", month: "long", year: "numeric" });
+  const quoteNum = new Date().getFullYear();
+  const isFR = lang === "fr";
+
+  const lbl = {
+    quote: isFR ? "Simulation tarifaire" : "Pricing simulation",
+    quoteNum: isFR ? "Simulation tarifaire" : "Pricing simulation",
+    date: isFR ? "Date" : "Date",
+    client: isFR ? "Client" : "Client",
+    prepared: isFR ? "Pr\u00e9par\u00e9 par" : "Prepared by",
+    validity: isFR ? "Validit\u00e9 : 30 jours" : "Valid for 30 days",
+    desc: isFR ? "D\u00e9signation" : "Description",
+    detail: isFR ? "D\u00e9tail" : "Detail",
+    unitPrice: isFR ? "Prix unit. HT" : "Unit price (excl. VAT)",
+    qty: isFR ? "Qt\u00e9" : "Qty",
+    totalHT: isFR ? "Total HT" : "Total (excl. VAT)",
+    oneTime: isFR ? "FRAIS UNIQUE" : "ONE-TIME FEES",
+    recurring: isFR ? "FRAIS VARIABLE" : "VARIABLE FEES",
+    varCosts: isFR ? "CO\u00dbTS VARIABLES (USAGE)" : "VARIABLE COSTS (USAGE-BASED)",
+    subtotal: isFR ? "Sous-total" : "Subtotal",
+    totalSetup: isFR ? "Total frais unique HT" : "Total one-time fees (excl. VAT)",
+    totalAnnual: isFR ? "Total variable HT" : "Total variable (excl. VAT)",
+    monthly: isFR ? "Abonnement mensuel recommand\u00e9" : "Recommended monthly subscription",
+    exact: isFR ? "exact" : "exact",
+    metrics: isFR ? "INDICATEURS CL\u00c9S" : "KEY METRICS",
+    costInv: isFR ? "Co\u00fbt par investisseur" : "Cost per investor",
+    feePct: isFR ? "Frais en % du volume" : "Fee as % of volume",
+    assumptions: isFR ? "HYPOTH\u00c8SES DE CALCUL" : "CALCULATION ASSUMPTIONS",
+    investors: isFR ? "investisseurs individuels" : "individual investors",
+    entities: isFR ? "personnes morales" : "legal entities",
+    activeInv: isFR ? "investisseurs actifs" : "active investors",
+    projOwn: isFR ? "projets" : "projects",
+    invVol: isFR ? "Volume d\u2019investissement (12 mois)" : "Investment volume (12 months)",
+    signatures: isFR ? "souscriptions" : "subscriptions",
+    legal: isFR ? "Mentions l\u00e9gales" : "Legal notice",
+    legalText: isFR ? "Cette simulation tarifaire est \u00e9tablie hors taxes \u00e0 titre indicatif et ne constitue pas un devis contractuel. TVA applicable selon la r\u00e9glementation en vigueur. Les tarifs variables sont factur\u00e9s mensuellement sur la base de l\u2019usage r\u00e9el. Ce document est confidentiel et destin\u00e9 exclusivement au destinataire nomm\u00e9. Equisafe SAS \u2014 SIREN 845 383 645 \u2014 RCS Nanterre \u2014 TVA FR05845383645 \u2014 Capital 4\u00A0940,23\u00A0\u20AC." : "This pricing simulation is presented excluding VAT for informational purposes and does not constitute a binding quote. VAT is applicable per current regulations. Variable fees are billed monthly based on actual usage. This document is confidential and intended solely for the named recipient. Equisafe SAS \u2014 SIREN 845 383 645 \u2014 RCS Nanterre \u2014 VAT FR05845383645 \u2014 Share capital \u20AC4,940.23.",
+    page: isFR ? "Page" : "Page",
+    perInvestor: isFR ? "/ investisseur" : "/ investor",
+    perMonth: isFR ? "/ mois" : "/ month",
+    perTx: isFR ? "/ transaction" : "/ transaction",
+    perUnit: isFR ? "/ unit\u00e9" : "/ unit",
+  };
+
+  // Build table rows
+  let rows = "";
+  const secRow = (title) => rows += `<tr class="sec"><td colspan="5">${title}</td></tr>`;
+  const row = (desc, detail, unit, qty, total) => rows += `<tr><td>${desc}</td><td class="det">${detail}</td><td class="r">${unit}</td><td class="r">${qty}</td><td class="r bold">${total}</td></tr>`;
+  const totalRow = (label, val, cls="") => rows += `<tr class="total ${cls}"><td colspan="4">${label}</td><td class="r bold">${val}</td></tr>`;
+
+  // 1) SETUP
+  const offertTag = isFR ? "Offert" : "Waived";
+  const strikeOffer = (price) => `<span style="text-decoration:line-through;opacity:0.4">${price}</span> <span style="color:#059669;font-weight:700">${offertTag}</span>`;
+  secRow(lbl.oneTime);
+  row(t("sdkSetup"), isFR ? "Acc\u00e8s plateforme + int\u00e9gration SDK" : "Platform access + SDK integration", fmt(PRICING.setup), "1", S.freeSDK ? strikeOffer(fmt(PRICING.setup)) : (S.optSDK ? fmt(PRICING.setup) : strikeOffer(fmt(PRICING.setup))));
+  if (S.optSCSP) row(t("spvCreation"), isFR ? `${S.nbSCSP} SPV SCSP Luxembourg` : `${S.nbSCSP} SPV SCSP Luxembourg`, fmt(PRICING.scsp_creation), S.nbSCSP, S.freeSCSP ? strikeOffer(fmt(S.nbSCSP * PRICING.scsp_creation)) : fmt(S.nbSCSP * PRICING.scsp_creation));
+  if (S.optPSFP) row(t("psfpCreation"), isFR ? `${S.nbPSFP} op\u00e9ration(s) PSFP` : `${S.nbPSFP} PSFP operation(s)`, fmt(PRICING.psfp_creation), S.nbPSFP, S.freePSFPCreation ? strikeOffer(fmt(S.nbPSFP * PRICING.psfp_creation)) : fmt(S.nbPSFP * PRICING.psfp_creation));
+  if (S.optPSFP) row(t("psfpAudit"), isFR ? "Audit r\u00e9glementaire AMF" : "AMF regulatory audit", fmt(PRICING.psfp_audit), S.nbPSFP, S.freePSFPAudit ? strikeOffer(fmt(S.nbPSFP * PRICING.psfp_audit)) : fmt(S.nbPSFP * PRICING.psfp_audit));
+  if (S.optPSFP) row(isFR ? "Clôture PSFP" : "PSFP closing", isFR ? `${S.nbPSFP} clôture(s)` : `${S.nbPSFP} closing(s)`, fmt(PRICING.psfp_closing), S.nbPSFP, S.freePSFPClosing ? strikeOffer(fmt(S.nbPSFP * PRICING.psfp_closing)) : fmt(S.nbPSFP * PRICING.psfp_closing));
+  if (S.nbISIN > 0) row(t("isinCodes"), isFR ? "Code ISIN par SPV" : "ISIN code per SPV", fmt(PRICING.scsp_isin), S.nbISIN, S.freeISIN ? strikeOffer(fmt(S.nbISIN * PRICING.scsp_isin)) : fmt(S.nbISIN * PRICING.scsp_isin));
+  if (S.nbExtBank > 0) row(t("extBankSCSP"), isFR ? "Banque externe par SCSP" : "External bank per SCSP", fmt(PRICING.scsp_ext_bank), S.nbExtBank, S.freeExtBank ? strikeOffer(fmt(S.nbExtBank * PRICING.scsp_ext_bank)) : fmt(S.nbExtBank * PRICING.scsp_ext_bank));
+  if (S.nbFATCA > 0) row(t("fatcaUS"), isFR ? "Conformit\u00e9 FATCA US-person" : "FATCA US-person compliance", fmt(PRICING.scsp_fatca), S.nbFATCA, S.freeFATCA ? strikeOffer(fmt(S.nbFATCA * PRICING.scsp_fatca)) : fmt(S.nbFATCA * PRICING.scsp_fatca));
+  totalRow(lbl.totalSetup, fmt(calc.totalSetup));
+
+  // 2) RECURRING
+  secRow(lbl.recurring);
+  if (calc.tokenFees > 0) {
+    row(t("tokenFee"), `0.3% \u00D7 ${fmt(S.tokenAUM)} AUM`, "0,30%", "\u2014", fmt(calc.tokenFees));
+    row("KYC/KYB " + (isFR ? "investisseurs" : "investors"), `${S.newNatural} \u00D7 ${fmtDec(PRICING.kyc_natural)}`, fmtDec(PRICING.kyc_natural), S.newNatural, fmtDec(calc.tokenKycFees));
+    row("IBAN + Wallet", `${S.newNatural} \u00D7 2\u20AC ${lbl.perMonth} \u00D7 12`, "2,00 \u20AC", S.newNatural, fmt(calc.tokenIbanWallet));
+    row(isFR ? "Frais bancaires token (0,10%)" : "Token bank fees (0.10%)", `0.10% \u00D7 ${fmt(S.tokenAUM)}`, "0,10%", "\u2014", fmt(calc.tokenBankFees));
+    if (calc.tokenNonEur > 0) row(isFR ? "FX token (0,35%)" : "Token FX (0.35%)", `0.35% \u00D7 ${fmt(S.tokenAUM * (1 - S.pctEUR))}`, "0,35%", "\u2014", fmt(calc.tokenNonEur));
+  }
+  if (calc.scspFees > 0) row(t("spvAdmin"), `VIP ${fmtPct(calc.scspAdminRate)} \u00D7 ${fmt(S.nbSCSP * S.avgVolPerSPV)}`, fmtPct(calc.scspAdminRate), "\u2014", fmt(calc.scspFees));
+  if (calc.psfpAdminFees > 0) row(isFR ? "Admin PSFP (6% HT)" : "PSFP admin (6% HT)", `6% \u00D7 ${fmt(S.psfpVolume)}`, "6%", "\u2014", fmt(calc.psfpAdminFees));
+  row("KYC/KYB " + (isFR ? "investisseurs" : "investors"), `${S.newNatural} \u00D7 ${fmtDec(PRICING.kyc_natural)}`, fmtDec(PRICING.kyc_natural), S.newNatural, fmtDec(calc.kycFees));
+  row(isFR ? "Souscriptions (e-signatures)" : "Subscriptions (e-signatures)", `${S.nbSignatures} \u00D7 ${fmtDec(PRICING.esignature)}`, fmtDec(PRICING.esignature), S.nbSignatures, fmt(calc.sigFees));
+  row("IBAN + Wallet " + (isFR ? "investisseurs" : "investors"), `${S.activeInvestors} \u00D7 2\u20AC ${lbl.perMonth} \u00D7 12`, "2,00 \u20AC", S.activeInvestors, fmt(calc.ibanWalletInv));
+  row("IBAN " + (isFR ? "entit\u00e9s" : "entities"), `${S.projectOwners} \u00D7 ${fmt(PRICING.iban_entity_mo)} ${lbl.perMonth} \u00D7 12`, fmt(PRICING.iban_entity_mo), S.projectOwners, fmt(calc.ibanEntity));
+  row("Wallet " + (isFR ? "entit\u00e9s" : "entities"), `${S.projectOwners} \u00D7 1\u20AC ${lbl.perMonth} \u00D7 12`, "1,00 \u20AC", S.projectOwners, fmt(calc.walletEntity));
+  row(isFR ? "Frais bancaires (0,10%)" : "Bank fees (0.10%)", `0.10% \u00D7 ${fmt(S.volY1)}`, "0,10%", "\u2014", fmt(calc.bankTxFees));
+  if (calc.fxFees > 0) row(isFR ? "Conversion FX (0,35%)" : "FX conversion (0.35%)", `0.35% \u00D7 ${fmt(S.volY1 * (1 - S.pctEUR))}`, "0,35%", "\u2014", fmt(calc.fxFees));
+  if (calc.cryptoFees > 0) row("Crypto swap", `${fmtPct(getCryptoRate(S.volY1 * S.pctCrypto))} \u00D7 ${fmt(S.volY1 * S.pctCrypto)}`, fmtPct(getCryptoRate(S.volY1 * S.pctCrypto)), "\u2014", fmt(calc.cryptoFees));
+  if (calc.smaFees > 0) row("SMA DeFi", `500\u20AC ${lbl.perMonth} \u00D7 12`, "500 \u20AC", "12", fmt(calc.smaFees));
+  totalRow(lbl.totalAnnual, fmt(calc.totalAnnual));
+
+  // 3) VARIABLE COSTS
+  secRow(lbl.varCosts);
+  row(isFR ? "Cession de titres equity" : "Equity title transfer", lbl.perInvestor, "500 \u20AC", "\u2014", isFR ? "selon usage" : "as used");
+  row(isFR ? "Cession de titres obligataire" : "Bond title transfer", lbl.perInvestor, "350 \u20AC", "\u2014", isFR ? "selon usage" : "as used");
+
+  const logoSVG = `<svg width="140" height="24" viewBox="0 0 896 152" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#cp2)"><path d="M45.79 3.73C44.7 2.64 45.47 0.78 47.01 0.78H93.5C94.41 0.78 95.3 1.14 95.94 1.79L163.38 69.23C166.97 72.83 166.97 78.66 163.38 82.25L147.9 97.73C147.47 98.17 146.89 98.41 146.28 98.41H97.91C96.89 98.41 96.38 97.16 97.1 96.44L111.29 82.25C114.89 78.65 114.89 72.82 111.29 69.23L45.79 3.73Z" fill="white"/><path d="M121.26 147.83C122.34 148.92 121.58 150.78 120.04 150.78H73.55C72.64 150.78 71.76 150.42 71.11 149.77L3.67 82.33C0.07 78.73 0.07 72.9 3.67 69.31L19.15 53.83C19.58 53.39 20.16 53.15 20.78 53.15H69.14C70.16 53.15 70.67 54.4 69.95 55.12L55.76 69.31C52.16 72.91 52.16 78.74 55.76 82.33L121.26 147.83Z" fill="white"/></g><path d="M851.715 122.987C822.774 122.987 806.133 103.633 806.133 77.406C806.133 49.55 824.945 31.643 852.077 31.643C877.219 31.643 895.126 47.018 895.126 77.406V83.194H828.381C830.19 95.132 837.425 104.176 848.459 104.176H855.694C864.557 104.176 870.345 98.568 871.973 91.695H893.86C892.232 109.602 877.038 122.987 851.715 122.987ZM829.286 67.638H872.697C871.431 56.966 864.015 50.455 856.056 50.455H847.374C838.692 50.455 831.818 57.328 829.286 67.638Z" fill="white"/><path d="M759.33 119.941V52.654H743.774V34.024H759.33C759.33 31.869 759.33 29.715 759.33 27.561C759.33 12.649 771.418 0.561 786.33 0.561H803.464V19.011H788.813C781.624 19.001 781.578 19.001 781.578 19.001V34.024H803.464V52.654H781.939V119.941H759.33Z" fill="white"/><path d="M682.689 122.987C658.452 122.987 642.172 103.995 642.172 77.225C642.172 50.455 659.175 31.643 683.232 31.643C695.894 31.643 705.842 37.612 711.449 44.486V34.356H733.336V120.274H711.449V108.155C705.299 116.295 696.617 122.987 682.689 122.987ZM693.542 103.452C703.31 103.452 710.726 95.493 710.726 84.46V70.713C710.726 60.584 704.214 51.178 693.542 51.178H683.594C672.922 51.178 664.601 62.573 664.601 77.225C664.601 91.876 672.922 103.452 683.594 103.452H693.542Z" fill="white"/><path d="M596.699 122.987C570.653 122.987 558.353 113.22 557.629 94.227H579.154C580.058 100.92 584.038 105.261 592.901 105.261H604.115C611.893 105.261 615.33 101.462 615.33 96.217C615.33 91.333 612.436 88.077 605.562 87.354L585.666 85.183C568.482 83.194 560.162 73.064 560.162 58.956C560.162 40.687 574.27 31.643 597.242 31.643C619.852 31.643 633.96 40.687 634.684 60.403H613.159C612.436 53.71 609.361 49.369 600.86 49.369H591.273C584.038 49.369 580.42 52.987 580.42 58.232C580.42 63.297 584.038 66.553 590.73 67.276L610.627 69.447C626.725 71.256 635.769 79.938 635.769 94.951C635.769 113.581 623.108 122.987 596.699 122.987Z" fill="white"/><path d="M526.988 120.273V54.252H515.774V34.356H549.417V120.273H526.988ZM524.999 22.418V0.893H549.96V22.418H524.999Z" fill="white"/><path d="M456.974 122.989C437.439 122.989 424.778 111.774 424.778 89.164V34.358H447.388V84.823C447.388 96.038 452.633 102.368 460.049 102.368H469.093C476.871 102.368 483.744 95.314 483.744 84.823V34.358H506.173V120.276H484.468V108.337C479.584 117.201 471.083 122.989 456.974 122.989Z" fill="white"/><path d="M392.128 109.059C387.063 116.295 378.743 122.987 364.634 122.987C340.216 122.987 323.575 103.995 323.575 77.406C323.575 50.455 340.758 31.643 365.358 31.643C378.562 31.643 386.521 37.431 392.851 44.847V34.356H414.738V151.023H392.128V109.059ZM374.944 103.452C384.712 103.452 392.128 95.493 392.128 84.46V70.713C392.128 60.584 385.616 51.178 374.944 51.178H364.996C354.324 51.178 346.004 62.573 346.004 77.406C346.004 91.876 354.324 103.452 364.996 103.452H374.944Z" fill="white"/><path d="M271.465 122.987C242.524 122.987 225.883 103.633 225.883 77.406C225.883 49.55 244.695 31.643 271.827 31.643C296.969 31.643 314.876 47.018 314.876 77.406V83.194H248.131C249.94 95.132 257.175 104.176 268.209 104.176H275.444C284.307 104.176 290.095 98.568 291.723 91.695H313.61C311.982 109.602 296.788 122.987 271.465 122.987ZM249.036 67.638H292.447C291.181 56.966 283.765 50.455 275.806 50.455H267.124C258.442 50.455 251.568 57.328 249.036 67.638Z" fill="white"/><defs><clipPath id="cp2"><rect width="165.114" height="150" fill="white" transform="translate(0.969 0.78)"/></clipPath></defs></svg>`;
+
+  const exportHTML = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Equisafe \u2014 ${lbl.quote} ${quoteNum}</title>
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; margin: 0; background: white; color: #1A1A1A; font-size: 11px; line-height: 1.4; }
+  .page { width: 210mm; height: 297mm; margin: 0 auto; padding: 0; position: relative; display: flex; flex-direction: column; }
+  .hdr { background: #0D0B14; padding: 18px 28px; display: flex; align-items: center; justify-content: space-between; }
+  .hdr .logo { display: flex; align-items: center; gap: 10px; }
+  .hdr .quote-ref { text-align: right; color: #999; font-size: 10px; line-height: 1.6; }
+  .hdr .quote-ref strong { color: white; font-size: 12px; display: block; }
+  .gradient-bar { height: 2px; background: linear-gradient(90deg, #7C3AED, #4F46E5, #EC4899, #F97316); }
+  .meta { display: flex; justify-content: space-between; padding: 14px 28px 10px; }
+  .meta-label { font-size: 8px; text-transform: uppercase; letter-spacing: 1.2px; color: #999; margin-bottom: 2px; font-weight: 600; }
+  .meta-value { font-size: 11px; color: #1A1A1A; font-weight: 500; }
+  .assumptions-top { margin: 0 28px 10px; padding: 12px 16px; background: #F8F7FC; border: 1px solid #E4E1EC; border-radius: 8px; }
+  .assumptions-top h4 { font-size: 8px; text-transform: uppercase; letter-spacing: 1.5px; color: #7C3AED; margin-bottom: 8px; font-weight: 700; }
+  .assumptions-top .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px 12px; }
+  .assumptions-top .a-item { display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; background: white; border-radius: 4px; border: 1px solid #E4E1EC; }
+  .assumptions-top .a-label { font-size: 8.5px; color: #888; }
+  .assumptions-top .a-value { font-family: 'SF Mono', monospace; font-size: 10px; font-weight: 700; color: #1A1A1A; }
+  .content { padding: 0 28px; flex: 1; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+  th { font-size: 7.5px; text-transform: uppercase; letter-spacing: 0.8px; color: #888; font-weight: 600; padding: 5px 6px; text-align: left; border-bottom: 1.5px solid #E4E1EC; }
+  th.r { text-align: right; }
+  td { padding: 4px 6px; font-size: 9.5px; border-bottom: 1px solid #F0EEF5; vertical-align: top; }
+  td.r { text-align: right; font-family: 'SF Mono', monospace; font-size: 9px; }
+  td.det { color: #888; font-size: 8.5px; }
+  td.bold, .bold { font-weight: 600; }
+  tr.sec td { background: #F0EEF5; font-size: 8px; font-weight: 700; letter-spacing: 1.2px; color: #5C5A6A; padding: 5px 6px; border-bottom: none; }
+  tr.total td { border-top: 1.5px solid #E4E1EC; border-bottom: none; font-weight: 600; font-size: 10px; padding: 5px 6px; background: #FAFAFE; }
+  tr.total.grand td { background: #0D0B14; color: white; font-size: 11px; }
+  tr.total.grand td.r { color: #34D399; }
+  .metrics { display: flex; gap: 10px; margin: 8px 0; }
+  .metric { flex: 1; background: #F8F7FC; border: 1px solid #E4E1EC; border-radius: 6px; padding: 8px; text-align: center; }
+  .metric .m-label { font-size: 7.5px; text-transform: uppercase; letter-spacing: 0.8px; color: #888; font-weight: 600; }
+  .metric .m-value { font-family: monospace; font-size: 14px; font-weight: 700; color: #7C3AED; margin-top: 2px; }
+  .metric .m-sub { font-size: 7.5px; color: #888; margin-top: 1px; }
+  .metric.accent { background: #0D0B14; border-color: #0D0B14; }
+  .metric.accent .m-label { color: #999; }
+  .metric.accent .m-value { color: #34D399; font-size: 16px; }
+  .metric.accent .m-sub { color: #666; }
+  .legal-bottom { margin: 6px 0 0; padding: 8px 0; border-top: 1px solid #E4E1EC; }
+  .legal-bottom p { font-size: 7px; color: #AAA; line-height: 1.5; }
+  .ftr { background: #0D0B14; padding: 10px 28px; display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+  .ftr-left { color: #666; font-size: 8px; line-height: 1.5; }
+  .ftr-right { color: #666; font-size: 8px; text-align: right; }
+  .ftr a { color: #818CF8; text-decoration: none; }
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .page { width: 100%; height: 100vh;
+  }
+</style></head><body>
+<div class="page">
+  <div class="hdr">
+    <div class="logo">${logoSVG}</div>
+    <div class="quote-ref"><strong>${lbl.quoteNum} ${quoteNum}</strong>${today}</div>
+  </div>
+  <div class="gradient-bar"></div>
+  <div class="meta">
+    <div class="meta-block">
+      <div class="meta-label">${lbl.client}</div>
+      <div class="meta-value">${esc(S.clientName) || "\u2014"}</div>
+    </div>
+    <div class="meta-block">
+      <div class="meta-label">${lbl.date}</div>
+      <div class="meta-value">${today}</div>
+    </div>
+    <div class="meta-block">
+      <div class="meta-label" style="color:#7C3AED">${lbl.validity}</div>
+    </div>
+  </div>
+  <div class="assumptions-top">
+    <h4>${lbl.assumptions}</h4>
+    <div class="grid">
+      <div class="a-item"><span class="a-label">${isFR ? "Investisseurs (PP+PM)" : "Investors (ind.+ent.)"}</span><span class="a-value">${S.newNatural}</span></div>
+      <div class="a-item"><span class="a-label">${isFR ? "Nombre de projets" : "Number of projects"}</span><span class="a-value">${S.projectOwners}</span></div>
+      <div class="a-item"><span class="a-label">${isFR ? "Volume d\u2019investissement" : "Investment volume"}</span><span class="a-value">${fmt(S.volY1)}</span></div>
+      ${S.optTokenisation ? `<div class="a-item"><span class="a-label">AUM</span><span class="a-value">${fmt(S.tokenAUM)}</span></div>
+` : ""}
+    </div>
+  </div>
+  <div class="content">
+    <table>
+      <thead><tr><th>${lbl.desc}</th><th>${lbl.detail}</th><th class="r">${lbl.unitPrice}</th><th class="r">${lbl.qty}</th><th class="r">${lbl.totalHT}</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="metrics">
+      <div class="metric"><div class="m-label">${lbl.costInv}</div><div class="m-value">${fmtDec(calc.costPerInvestor)}</div></div>
+      <div class="metric"><div class="m-label">${lbl.feePct}</div><div class="m-value">${fmtPct(calc.feeAsPctVol)}</div></div>
+      <div class="metric accent"><div class="m-label">${lbl.monthly}</div><div class="m-value">${fmt(calc.roundedMonthly)}</div><div class="m-sub">${lbl.exact}: ${fmtDec(calc.customMonthly)}</div></div>
+    </div>
+    <div class="legal-bottom">
+      <p>${lbl.legalText}</p>
+    </div>
+  </div>
+  <div class="ftr">
+    <div class="ftr-left">Equisafe SAS \u00B7 9 Rue des Colonnes, 75002 Paris \u00B7 SIREN 845 383 645<br><a href="mailto:ops@equisafe.io">ops@equisafe.io</a> \u00B7 equisafe.io</div>
+    <div class="ftr-right">${lbl.quote} ${quoteNum}<br>${today}</div>
+  </div>
+</div>
+</body></html>`;
+
+  const blob = new Blob([exportHTML], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+  const w = window.open(url, "_blank");
+  if (w) { w.onload = () => { setTimeout(() => { w.print(); }, 300); }; }
+}
+
+// ─── INIT ────────────────────────────────────────────────────────
+render();
+requestAnimationFrame(() => { updateLangSlider(); });
+</script>
+</body>
+</html>
