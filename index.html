@@ -996,7 +996,8 @@ function recalc() {
   const totalSetup = setupSDK + setupSCSP + setupPSFPCreation + setupPSFP + setupPSFPClosing + setupISIN + setupExtBank + setupFATCA;
   const scspTotalVol = S.optSCSP ? S.nbSCSP * S.avgVolPerSPV : 0;
   const scspAdminRate = getVipRate(scspTotalVol);
-  const scspFees = S.optSCSP ? scspTotalVol * scspAdminRate : 0;
+  const scspFees5Y = S.optSCSP ? scspTotalVol * scspAdminRate : 0;
+  const scspAnnual = scspFees5Y / 5;
   // Tokenisation — standalone service based on AUM
   const tokenFees = S.optTokenisation ? S.tokenAUM * P.tokenisation_rate : 0;
   const tokenKycFees = S.optTokenisation ? S.newNatural * P.kyc_natural : 0;
@@ -1021,12 +1022,12 @@ function recalc() {
   const cryptoFees = cryptoVol * cryptoRate;
   const fxCryptoTotal = fxFees + cryptoFees;
   const smaFees = S.optSMA ? P.sma_monthly * 12 : 0;
-  const totalAnnual = scspFees + tokenTotal + psfpTotal + bankingTotal + fxCryptoTotal + smaFees;
-  const customMonthly = (totalAnnual - scspFees) / 12 + scspFees / 60;
+  const totalAnnual = scspAnnual + tokenTotal + psfpTotal + bankingTotal + fxCryptoTotal + smaFees;
+  const customMonthly = totalAnnual / 12;
   const roundedMonthly = Math.ceil(customMonthly / 100) * 100;
   const costPerInvestor = S.activeInvestors > 0 ? totalAnnual / S.activeInvestors : 0;
   const feeAsPctVol = S.volY1 > 0 ? totalAnnual / S.volY1 : 0;
-  calc = { setupSDK, setupSCSP, setupPSFPCreation, setupPSFP, setupPSFPClosing, setupISIN, setupExtBank, setupFATCA, totalSetup, scspFees, scspAdminRate, tokenFees, tokenKycFees, tokenIbanWallet, tokenBankFees, tokenNonEur, tokenTotal, psfpAdminFees, psfpTotal, kycFees, kybFees, sigFees, ibanWalletInv, ibanEntity, walletEntity, bankTxFees, bankingTotal, fxFees, cryptoFees, fxCryptoTotal, smaFees, totalAnnual, customMonthly, roundedMonthly, costPerInvestor, feeAsPctVol };
+  calc = { setupSDK, setupSCSP, setupPSFPCreation, setupPSFP, setupPSFPClosing, setupISIN, setupExtBank, setupFATCA, totalSetup, scspFees5Y, scspAnnual, scspAdminRate, tokenFees, tokenKycFees, tokenIbanWallet, tokenBankFees, tokenNonEur, tokenTotal, psfpAdminFees, psfpTotal, kycFees, kybFees, sigFees, ibanWalletInv, ibanEntity, walletEntity, bankTxFees, bankingTotal, fxFees, cryptoFees, fxCryptoTotal, smaFees, totalAnnual, customMonthly, roundedMonthly, costPerInvestor, feeAsPctVol };
 }
 
 function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
@@ -1144,7 +1145,7 @@ function renderResults() {
   h += '<hr class="divider">';
   h += `<p class="result-section-title">${t("annualTitle")}</p>`;
   if (calc.tokenTotal > 0) h += resultLine(t("tokenFee"), fmt(calc.tokenTotal), { sub: `0,3% AUM + ${lang === "fr" ? "frais bancaires" : "banking"}` });
-  if (calc.scspFees > 0) h += resultLine(t("spvAdmin"), fmt(calc.scspFees), { sub: `VIP tier: ${fmtPct(calc.scspAdminRate)} — ${lang === "fr" ? "durée 5 ans (étalé sur 60 mois)" : "5-year term (spread over 60 months)"}` });
+  if (calc.scspAnnual > 0) h += resultLine(t("spvAdmin"), fmt(calc.scspAnnual), { sub: `VIP tier: ${fmtPct(calc.scspAdminRate)} — ${lang === "fr" ? `${fmt(calc.scspFees5Y)} sur 5 ans → ${fmt(calc.scspAnnual)}/an` : `${fmt(calc.scspFees5Y)} over 5 years → ${fmt(calc.scspAnnual)}/yr`}` });
   if (calc.psfpTotal > 0) h += resultLine(t("psfpFees"), fmt(calc.psfpTotal), { sub: t("psfpFeeSub") });
   h += resultLine(t("bankKYC"), fmt(calc.bankingTotal), { sub: t("bankKYCSub") });
   if (calc.fxCryptoTotal > 0) h += resultLine(t("fxCrypto"), fmt(calc.fxCryptoTotal));
@@ -1290,7 +1291,7 @@ function handleExport() {
     row(isFR ? "Frais bancaires token (0,10%)" : "Token bank fees (0.10%)", `0.10% \u00D7 ${fmt(S.tokenAUM)}`, "0,10%", "\u2014", fmt(calc.tokenBankFees));
     if (calc.tokenNonEur > 0) row(isFR ? "FX token (0,35%)" : "Token FX (0.35%)", `0.35% \u00D7 ${fmt(S.tokenAUM * (1 - S.pctEUR))}`, "0,35%", "\u2014", fmt(calc.tokenNonEur));
   }
-  if (calc.scspFees > 0) row(t("spvAdmin") + (isFR ? " (5 ans)" : " (5 years)"), `VIP ${fmtPct(calc.scspAdminRate)} \u00D7 ${fmt(S.nbSCSP * S.avgVolPerSPV)}`, fmtPct(calc.scspAdminRate), "\u2014", fmt(calc.scspFees));
+  if (calc.scspAnnual > 0) row(t("spvAdmin") + (isFR ? " (5 ans)" : " (5 years)"), `VIP ${fmtPct(calc.scspAdminRate)} \u00D7 ${fmt(S.nbSCSP * S.avgVolPerSPV)} / 5`, fmtPct(calc.scspAdminRate), "\u2014", fmt(calc.scspAnnual));
   if (calc.psfpAdminFees > 0) row(isFR ? "Admin PSFP (6% HT)" : "PSFP admin (6% HT)", `6% \u00D7 ${fmt(S.psfpVolume)}`, "6%", "\u2014", fmt(calc.psfpAdminFees));
   row("KYC/KYB " + (isFR ? "investisseurs" : "investors"), `${S.newNatural} \u00D7 ${fmtDec(PRICING.kyc_natural)}`, fmtDec(PRICING.kyc_natural), S.newNatural, fmtDec(calc.kycFees));
   row(isFR ? "Souscriptions (e-signatures)" : "Subscriptions (e-signatures)", `${S.nbSignatures} \u00D7 ${fmtDec(PRICING.esignature)}`, fmtDec(PRICING.esignature), S.nbSignatures, fmt(calc.sigFees));
