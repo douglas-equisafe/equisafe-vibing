@@ -1145,7 +1145,7 @@ function renderResults() {
   h += '<hr class="divider">';
   h += `<p class="result-section-title">${t("annualTitle")}</p>`;
   if (calc.tokenTotal > 0) h += resultLine(t("tokenFee"), fmt(calc.tokenTotal), { sub: `0,3% AUM + ${lang === "fr" ? "frais bancaires" : "banking"}` });
-  if (calc.scspAnnual > 0) h += resultLine(t("spvAdmin"), fmt(calc.scspAnnual), { sub: `VIP tier: ${fmtPct(calc.scspAdminRate)} — ${lang === "fr" ? `${fmt(calc.scspFees5Y)} sur 5 ans → ${fmt(calc.scspAnnual)}/an` : `${fmt(calc.scspFees5Y)} over 5 years → ${fmt(calc.scspAnnual)}/yr`}` });
+  if (calc.scspAnnual > 0) h += resultLine(t("spvAdmin") + (lang === "fr" ? " (5 ans)" : " (5 yrs)"), fmt(calc.scspFees5Y), { sub: `VIP tier: ${fmtPct(calc.scspAdminRate)} — ${lang === "fr" ? `${fmt(calc.scspAnnual)}/an inclus dans le total` : `${fmt(calc.scspAnnual)}/yr included in total`}` });
   if (calc.psfpTotal > 0) h += resultLine(t("psfpFees"), fmt(calc.psfpTotal), { sub: t("psfpFeeSub") });
   h += resultLine(t("bankKYC"), fmt(calc.bankingTotal), { sub: t("bankKYCSub") });
   if (calc.fxCryptoTotal > 0) h += resultLine(t("fxCrypto"), fmt(calc.fxCryptoTotal));
@@ -1291,7 +1291,7 @@ function handleExport() {
     row(isFR ? "Frais bancaires token (0,10%)" : "Token bank fees (0.10%)", `0.10% \u00D7 ${fmt(S.tokenAUM)}`, "0,10%", "\u2014", fmt(calc.tokenBankFees));
     if (calc.tokenNonEur > 0) row(isFR ? "FX token (0,35%)" : "Token FX (0.35%)", `0.35% \u00D7 ${fmt(S.tokenAUM * (1 - S.pctEUR))}`, "0,35%", "\u2014", fmt(calc.tokenNonEur));
   }
-  if (calc.scspAnnual > 0) row(t("spvAdmin") + (isFR ? " (5 ans)" : " (5 years)"), `VIP ${fmtPct(calc.scspAdminRate)} \u00D7 ${fmt(S.nbSCSP * S.avgVolPerSPV)} / 5`, fmtPct(calc.scspAdminRate), "\u2014", fmt(calc.scspAnnual));
+  if (calc.scspAnnual > 0) row(t("spvAdmin") + (isFR ? " (5 ans)" : " (5 years)"), `VIP ${fmtPct(calc.scspAdminRate)} \u00D7 ${fmt(S.nbSCSP * S.avgVolPerSPV)}`, fmtPct(calc.scspAdminRate), "\u2014", fmt(calc.scspFees5Y) + (isFR ? ` (${fmt(calc.scspAnnual)}/an)` : ` (${fmt(calc.scspAnnual)}/yr)`));
   if (calc.psfpAdminFees > 0) row(isFR ? "Admin PSFP (6% HT)" : "PSFP admin (6% HT)", `6% \u00D7 ${fmt(S.psfpVolume)}`, "6%", "\u2014", fmt(calc.psfpAdminFees));
   row("KYC/KYB " + (isFR ? "investisseurs" : "investors"), `${S.newNatural} \u00D7 ${fmtDec(PRICING.kyc_natural)}`, fmtDec(PRICING.kyc_natural), S.newNatural, fmtDec(calc.kycFees));
   row(isFR ? "Souscriptions (e-signatures)" : "Subscriptions (e-signatures)", `${S.nbSignatures} \u00D7 ${fmtDec(PRICING.esignature)}`, fmtDec(PRICING.esignature), S.nbSignatures, fmt(calc.sigFees));
