@@ -407,7 +407,7 @@
     text-align: center;
     position: relative;
     overflow: hidden;
-    background: linear-gradient(175deg, #0D0B14 0%, #110F1A 100%);
+    background: var(--bg-card);
   }
   /* Subtle radial glow behind the amount */
   .result-hero::before {
@@ -419,14 +419,14 @@
     width: 300px;
     height: 200px;
     border-radius: 50%;
-    background: radial-gradient(ellipse, rgba(52,211,153,0.08) 0%, transparent 70%);
+    background: radial-gradient(ellipse, rgba(124,58,237,0.08) 0%, transparent 70%);
     pointer-events: none;
   }
   .result-hero .label {
     font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 3px;
-    color: #7A7590;
+    color: var(--text-dim);
     margin-bottom: 10px;
     font-weight: 500;
     position: relative;
@@ -436,12 +436,12 @@
     font-size: 46px;
     font-weight: 700;
     position: relative;
-    color: #34D399;
-    text-shadow: 0 0 40px rgba(52,211,153,0.3);
+    color: var(--accent-1);
+    text-shadow: 0 0 40px rgba(124,58,237,0.2);
   }
   .result-hero .sub {
     font-size: 12px;
-    color: #7A7590;
+    color: var(--text-dim);
     margin-top: 6px;
     font-family: var(--mono);
     font-weight: 400;
@@ -1022,7 +1022,7 @@ function recalc() {
   const fxCryptoTotal = fxFees + cryptoFees;
   const smaFees = S.optSMA ? P.sma_monthly * 12 : 0;
   const totalAnnual = scspFees + tokenTotal + psfpTotal + bankingTotal + fxCryptoTotal + smaFees;
-  const customMonthly = totalAnnual / 12;
+  const customMonthly = (totalAnnual - scspFees) / 12 + scspFees / 60;
   const roundedMonthly = Math.ceil(customMonthly / 100) * 100;
   const costPerInvestor = S.activeInvestors > 0 ? totalAnnual / S.activeInvestors : 0;
   const feeAsPctVol = S.volY1 > 0 ? totalAnnual / S.volY1 : 0;
@@ -1144,7 +1144,7 @@ function renderResults() {
   h += '<hr class="divider">';
   h += `<p class="result-section-title">${t("annualTitle")}</p>`;
   if (calc.tokenTotal > 0) h += resultLine(t("tokenFee"), fmt(calc.tokenTotal), { sub: `0,3% AUM + ${lang === "fr" ? "frais bancaires" : "banking"}` });
-  if (calc.scspFees > 0) h += resultLine(t("spvAdmin"), fmt(calc.scspFees), { sub: `VIP tier: ${fmtPct(calc.scspAdminRate)}` });
+  if (calc.scspFees > 0) h += resultLine(t("spvAdmin"), fmt(calc.scspFees), { sub: `VIP tier: ${fmtPct(calc.scspAdminRate)} — ${lang === "fr" ? "durée 5 ans (étalé sur 60 mois)" : "5-year term (spread over 60 months)"}` });
   if (calc.psfpTotal > 0) h += resultLine(t("psfpFees"), fmt(calc.psfpTotal), { sub: t("psfpFeeSub") });
   h += resultLine(t("bankKYC"), fmt(calc.bankingTotal), { sub: t("bankKYCSub") });
   if (calc.fxCryptoTotal > 0) h += resultLine(t("fxCrypto"), fmt(calc.fxCryptoTotal));
@@ -1290,7 +1290,7 @@ function handleExport() {
     row(isFR ? "Frais bancaires token (0,10%)" : "Token bank fees (0.10%)", `0.10% \u00D7 ${fmt(S.tokenAUM)}`, "0,10%", "\u2014", fmt(calc.tokenBankFees));
     if (calc.tokenNonEur > 0) row(isFR ? "FX token (0,35%)" : "Token FX (0.35%)", `0.35% \u00D7 ${fmt(S.tokenAUM * (1 - S.pctEUR))}`, "0,35%", "\u2014", fmt(calc.tokenNonEur));
   }
-  if (calc.scspFees > 0) row(t("spvAdmin"), `VIP ${fmtPct(calc.scspAdminRate)} \u00D7 ${fmt(S.nbSCSP * S.avgVolPerSPV)}`, fmtPct(calc.scspAdminRate), "\u2014", fmt(calc.scspFees));
+  if (calc.scspFees > 0) row(t("spvAdmin") + (isFR ? " (5 ans)" : " (5 years)"), `VIP ${fmtPct(calc.scspAdminRate)} \u00D7 ${fmt(S.nbSCSP * S.avgVolPerSPV)}`, fmtPct(calc.scspAdminRate), "\u2014", fmt(calc.scspFees));
   if (calc.psfpAdminFees > 0) row(isFR ? "Admin PSFP (6% HT)" : "PSFP admin (6% HT)", `6% \u00D7 ${fmt(S.psfpVolume)}`, "6%", "\u2014", fmt(calc.psfpAdminFees));
   row("KYC/KYB " + (isFR ? "investisseurs" : "investors"), `${S.newNatural} \u00D7 ${fmtDec(PRICING.kyc_natural)}`, fmtDec(PRICING.kyc_natural), S.newNatural, fmtDec(calc.kycFees));
   row(isFR ? "Souscriptions (e-signatures)" : "Subscriptions (e-signatures)", `${S.nbSignatures} \u00D7 ${fmtDec(PRICING.esignature)}`, fmtDec(PRICING.esignature), S.nbSignatures, fmt(calc.sigFees));
@@ -1341,7 +1341,7 @@ function handleExport() {
   tr.sec td { background: #F0EEF5; font-size: 8px; font-weight: 700; letter-spacing: 1.2px; color: #5C5A6A; padding: 5px 6px; border-bottom: none; }
   tr.total td { border-top: 1.5px solid #E4E1EC; border-bottom: none; font-weight: 600; font-size: 10px; padding: 5px 6px; background: #FAFAFE; }
   tr.total.grand td { background: #0D0B14; color: white; font-size: 11px; }
-  tr.total.grand td.r { color: #34D399; }
+  tr.total.grand td.r { color: #A78BFA; }
   .metrics { display: flex; gap: 10px; margin: 8px 0; }
   .metric { flex: 1; background: #F8F7FC; border: 1px solid #E4E1EC; border-radius: 6px; padding: 8px; text-align: center; }
   .metric .m-label { font-size: 7.5px; text-transform: uppercase; letter-spacing: 0.8px; color: #888; font-weight: 600; }
@@ -1349,7 +1349,7 @@ function handleExport() {
   .metric .m-sub { font-size: 7.5px; color: #888; margin-top: 1px; }
   .metric.accent { background: #0D0B14; border-color: #0D0B14; }
   .metric.accent .m-label { color: #999; }
-  .metric.accent .m-value { color: #34D399; font-size: 16px; }
+  .metric.accent .m-value { color: #7C3AED; font-size: 16px; }
   .metric.accent .m-sub { color: #666; }
   .legal-bottom { margin: 6px 0 0; padding: 8px 0; border-top: 1px solid #E4E1EC; }
   .legal-bottom p { font-size: 7px; color: #AAA; line-height: 1.5; }
